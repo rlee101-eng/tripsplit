@@ -7,7 +7,7 @@ A free, two-person Splitwise-style app for tracking who owes whom while travelli
 - Expenses are grouped by trip, with categories and per-category totals.
 - **Mark as settled** zeroes the balance. You can also record partial payments. The money itself moves outside the app.
 - Works offline. Changes sync between both phones once you're back online.
-- Installs to your home screen as an app. It costs nothing to run: Vercel's free Hobby plan and the Supabase free tier.
+- Installs to your home screen as an app. It costs nothing to run: GitHub Pages and the Supabase free tier.
 
 ## Try it locally
 
@@ -31,15 +31,14 @@ npm test        # unit tests for money/split/balance logic
 3. Under **Authentication → Sign In / Providers → Email**, turn **off** "Confirm email" and save. The app signs in with email + password, and with confirmation off Supabase never needs to send an email, so there's no email setup.
 4. Under **Project Settings → API**, copy the **Project URL** and the **anon / publishable key**.
 
-### 2. Vercel (hosting)
+### 2. GitHub Pages (hosting)
 
-1. Push this folder to a GitHub repository (it can be private).
-2. Sign up at <https://vercel.com> with **Continue with GitHub**, then choose **Add New → Project** and import the repo. Vercel detects Vite automatically. Don't add the optional Supabase integration; it would create a second database.
-3. Under **Environment Variables**, add:
+1. Create a new **public** GitHub repository and push this folder to it. (Free GitHub accounts can only host Pages from public repos. That is fine: the repo holds only code, and your data lives in Supabase behind your login.)
+2. In the repo, go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
+3. Under **Settings → Secrets and variables → Actions → Variables**, add:
    - `VITE_SUPABASE_URL`: the Project URL, without `/rest/v1/`
    - `VITE_SUPABASE_ANON_KEY`: the anon/publishable key. This key is meant to be public: the database's row-level security only allows the two members to read or write data.
-4. Click **Deploy**. Then go to **Settings → Deployment Protection** and set **Vercel Authentication** to **Disabled**, otherwise only your Vercel account can open the app.
-5. Pushes to `main` redeploy automatically. GitHub Actions also runs the tests on every push.
+4. Go to **Actions → Deploy to GitHub Pages → Run workflow**. Pushes to `main` also deploy. The app will be at `https://<your-username>.github.io/<repo-name>/`.
 
 ### 3. Both of you sign in
 
