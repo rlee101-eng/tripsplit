@@ -28,12 +28,7 @@ npm test        # unit tests for money/split/balance logic
 
 1. Create a free account at <https://supabase.com>, then create a **New project**. Use the Sydney region and any database password.
 2. Open **SQL Editor → New query**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
-3. Under **Authentication → Emails → Templates → Magic Link**, make sure the body includes the 6-digit code, e.g.:
-   ```html
-   <h2>Your TripSplit code</h2>
-   <p>Enter this code in the app: <strong>{{ .Token }}</strong></p>
-   ```
-   The app signs in with a code instead of a link. On iPhone, a link from Mail would open in Safari, which doesn't share logins with the home-screen app.
+3. Under **Authentication → Sign In / Providers → Email**, turn **off** "Confirm email" and save. The app signs in with email + password, and with confirmation off Supabase never needs to send an email, so there's no email setup.
 4. Under **Project Settings → API**, copy the **Project URL** and the **anon / publishable key**.
 
 ### 2. GitHub Pages (hosting)
@@ -48,7 +43,7 @@ npm test        # unit tests for money/split/balance logic
 ### 3. Both of you sign in
 
 1. Open the URL on your phone. In Safari, choose **Share → Add to Home Screen**. In Chrome, choose **Install app**.
-2. Open it from the home screen, then enter your name and email, then the code you receive.
+2. Open it from the home screen, tap **Create account**, and enter your name, email and a password. The app stays signed in after that.
 3. Your partner does the same on their phone. **The first two people to sign in become the members, and nobody else can join.**
 4. Optional: afterwards, turn off **Authentication → Sign In / Providers → Allow new users to sign up** in Supabase.
 
