@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown } from 'lucide-react'
 import { db, getMeta } from '../lib/db'
 import { CURRENCIES, decimals, formatAud, formatMoney, HOME, minorToInput, parseToMinor, symbol, toAudMinor } from '../lib/money'
-import { computeShares } from '../lib/splits'
+import { amountsWithExtras, computeShares } from '../lib/splits'
 import { getRate } from '../lib/fx'
 import { dayLabel, todayLocal, uuid } from '../lib/dates'
 import { descriptionSuggestions, guessCategory } from '../lib/suggest'
 import { useSession } from '../lib/session'
 import { deleteExpense, saveExpense } from '../lib/mutations'
 import { back } from '../lib/router'
-import { CATEGORIES, type Expense, type SplitType } from '../lib/types'
+import { CATEGORIES, categoryOf, type Expense, type SplitType } from '../lib/types'
 import { BackButton, Empty, Header } from '../components/Layout'
 import { CategoryIcon } from '../components/Icons'
 
@@ -21,6 +21,9 @@ interface RateState {
   loading: boolean
   manual: boolean
 }
+
+/** How the split is entered. 'extras' (equal, except personal items) is saved as custom_amount. */
+type SplitMode = SplitType | 'extras'
 
 export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?: string }) {
   const { me, partner, name } = useSession()
@@ -41,8 +44,14 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const [showDetails, setShowDetails] = useState(false)
   const [date, setDate] = useState(todayLocal())
   const [paidBy, setPaidBy] = useState(me)
-  const [splitType, setSplitType] = useState<SplitType>('equal')
+  const [mode, setMode] = useState<SplitMode>('equal')
   const [custom, setCustom] = useState<Record<string, string>>({})
+  /** Each member's personal items, in the original currency, for the 'extras' mode. */
+  const [extras, setExtras] = useState<Record<string, string>>({})
+  const [splitOpen, setSplitOpen] = useState(false)
+  /** Confirmation shown after "Save & new". */
+  const [flash, setFlash] = useState('')
+  const amountRef = useRef<HTMLInputElement>(null)
   const [rate, setRate] = useState<RateState>({ rate: 1, pending: false, loading: false, manual: false })
   const [editingRate, setEditingRate] = useState(false)
   const [rateInput, setRateInput] = useState('')
@@ -63,7 +72,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       setCategoryTouched(true)
       setDate(existing.date)
       setPaidBy(existing.paid_by)
-      setSplitType(existing.split_type)
+      setMode(existing.split_type)
       if (existing.split_input) {
         setCustom(
           Object.fromEntries(
@@ -108,21 +117,35 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const rateOk = Number.isFinite(rate.rate) && rate.rate > 0
   const audMinor = amountMinor && rateOk ? toAudMinor(amountMinor, currency, rate.rate) : 0
 
+  useEffect(() => {
+    if (!flash) return
+    const t = setTimeout(() => setFlash(''), 3000)
+    return () => clearTimeout(t)
+  }, [flash])
+
+  const splitType: SplitType = mode === 'extras' ? 'custom_amount' : mode
+  const extrasMinor = Object.fromEntries(members.map((m) => [m, parseToMinor(extras[m] ?? '', currency) ?? 0]))
+  const withExtras = mode === 'extras' && amountMinor ? amountsWithExtras(amountMinor, extrasMinor, paidBy, members) : null
+
   const splitInput: Record<string, number> | null =
-    splitType === 'custom_amount'
+    mode === 'extras'
+      ? withExtras?.ok
+        ? withExtras.amounts
+        : null
+      : splitType === 'custom_amount'
       ? Object.fromEntries(members.map((m) => [m, parseToMinor(custom[m] ?? '', currency) ?? 0]))
       : splitType === 'custom_percent'
         ? Object.fromEntries(members.map((m) => [m, Math.round(Number(custom[m] || 0) * 100)]))
         : null
 
-  const split = computeShares({
-    type: splitType,
-    totalMinor: amountMinor ?? 0,
-    totalAudMinor: audMinor,
-    payer: paidBy,
-    members,
-    input: splitInput,
-  })
+  const split = withExtras && !withExtras.ok ? withExtras : computeShares({
+      type: splitType,
+      totalMinor: amountMinor ?? 0,
+      totalAudMinor: audMinor,
+      payer: paidBy,
+      members,
+      input: splitInput,
+    })
 
   if (!partner) {
     return (
@@ -183,8 +206,10 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setCustom(next)
   }
 
-  const chooseSplit = (t: SplitType) => {
-    setSplitType(t)
+  const chooseMode = (t: SplitMode) => {
+    setMode(t)
+    // These need no further input, so the choice is done.
+    if (t === 'equal' || t === 'full_other') setSplitOpen(false)
     if (t === 'custom_percent') setCustom({ [me]: '50', [other]: '50' })
     if (t === 'custom_amount' && amountMinor) {
       const half = Math.floor(amountMinor / 2)
@@ -217,17 +242,17 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setCategoryTouched(true)
     if (members.includes(e.paid_by)) setPaidBy(e.paid_by)
     if (e.split_type === 'custom_percent' && e.split_input) {
-      setSplitType('custom_percent')
+      setMode('custom_percent')
       setCustom(Object.fromEntries(Object.entries(e.split_input).map(([k, v]) => [k, String(v / 100)])))
     } else if (e.split_type !== 'custom_amount') {
       // Custom amounts belonged to the old total, so they don't carry over.
-      setSplitType(e.split_type)
+      setMode(e.split_type)
     }
   }
 
   const tripName = trips?.find((t) => t.id === tripId)?.name ?? (existing ? '(archived trip)' : 'Choose a trip')
 
-  const save = async () => {
+  const save = async (another = false) => {
     setError('')
     if (!tripId) {
       setShowDetails(true)
@@ -256,7 +281,20 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       deleted_at: null,
     }
     await saveExpense(e)
-    back(`#/trip/${tripId}`)
+    if (!another) return back(`#/trip/${tripId}`)
+    // Start a fresh expense, keeping the trip, date, currency, rate and payer.
+    setFlash(`Added ${e.description || categoryOf(category).label} · ${formatMoney(amountMinor, currency)}`)
+    setAmount('')
+    setDescription('')
+    setCategory('food')
+    setCategoryTouched(false)
+    setMode('equal')
+    setCustom({})
+    setExtras({})
+    setSplitOpen(false)
+    setSaving(false)
+    window.scrollTo(0, 0)
+    amountRef.current?.focus()
   }
 
   const remove = async () => {
@@ -266,11 +304,27 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   }
 
   const owedByOther = split.ok ? (payerIsMe ? split.shares[other] : split.shares[me]) : 0
+  const splitInvalid = !!amountMinor && !split.ok
+  const showSplitOptions = splitOpen || splitInvalid
+
+  const modes: { id: SplitMode; label: string; hint?: string }[] = [
+    { id: 'equal', label: 'Split equally' },
+    { id: 'full_other', label: payerIsMe ? `${otherName} owes the full amount` : 'You owe the full amount' },
+    { id: 'extras', label: 'Equally, except some items', hint: 'Take out anything that was just for one person' },
+    { id: 'custom_amount', label: 'Exact amounts' },
+    { id: 'custom_percent', label: 'Percentages' },
+  ]
+  const sharedMinor = amountMinor ? amountMinor - members.reduce((sum, m) => sum + extrasMinor[m], 0) : 0
 
   return (
     <>
       <Header title={existing ? 'Edit expense' : 'Add expense'} left={<BackButton />} right={<span />} />
       <main className="form">
+        {flash && (
+          <div className="flash" role="status">
+            <Check size={16} aria-hidden /> {flash}
+          </div>
+        )}
         <div className="amount-row">
           <select
             aria-label="Currency"
@@ -287,6 +341,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
             ))}
           </select>
           <input
+            ref={amountRef}
             className="amount"
             inputMode={decimals(currency) ? 'decimal' : 'numeric'}
             placeholder={decimals(currency) ? '0.00' : '0'}
@@ -404,61 +459,92 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
           </div>
         </div>
 
-        <div className="field">
-          <span>Split</span>
-          <div className="segmented four">
-            <button className={splitType === 'equal' ? 'on' : ''} onClick={() => chooseSplit('equal')}>
-              50 / 50
-            </button>
-            <button className={splitType === 'full_other' ? 'on' : ''} onClick={() => chooseSplit('full_other')}>
-              {payerIsMe ? `${otherName} owes all` : 'You owe all'}
-            </button>
-            <button className={splitType === 'custom_amount' ? 'on' : ''} onClick={() => chooseSplit('custom_amount')}>
-              Amounts
-            </button>
-            <button className={splitType === 'custom_percent' ? 'on' : ''} onClick={() => chooseSplit('custom_percent')}>
-              %
-            </button>
-          </div>
-        </div>
+        <div className={`split-box ${!amountMinor ? 'empty' : splitInvalid ? 'invalid' : ''}`}>
+          <button className="split-head" onClick={() => setSplitOpen(!showSplitOptions)} aria-expanded={showSplitOptions}>
+            <span className="split-text">
+              <span className="split-mode">{modes.find((m) => m.id === mode)?.label}</span>
+              <span className="split-result">
+                {!amountMinor
+                  ? 'Enter an amount to see who owes what'
+                  : !split.ok
+                    ? split.error
+                    : owedByOther === 0
+                      ? 'Nobody owes anything for this one'
+                      : payerIsMe
+                        ? `${otherName} owes you ${formatAud(owedByOther)}`
+                        : `You owe ${otherName} ${formatAud(owedByOther)}`}
+                {amountMinor && currency !== HOME && split.ok ? <small> (of {formatMoney(amountMinor, currency)})</small> : null}
+              </span>
+            </span>
+            <ChevronDown size={18} className={showSplitOptions ? 'flip' : ''} aria-hidden />
+          </button>
 
-        {(splitType === 'custom_amount' || splitType === 'custom_percent') && (
-          <div className="grid-2">
-            {[me, other].map((m) => (
-              <label className="field" key={m}>
-                <span>
-                  {m === me ? 'Your' : `${otherName}'s`} {splitType === 'custom_percent' ? '%' : `share (${currency})`}
-                </span>
-                <input inputMode="decimal" value={custom[m] ?? ''} onChange={(e) => setCustomFor(m, e.target.value)} />
-              </label>
-            ))}
-          </div>
-        )}
+          {showSplitOptions && (
+            <div className="split-options">
+              {modes.map((m) => (
+                <div key={m.id}>
+                  <button className={`split-option ${mode === m.id ? 'on' : ''}`} onClick={() => chooseMode(m.id)}>
+                    <span>
+                      {m.label}
+                      {m.hint && <small>{m.hint}</small>}
+                    </span>
+                    {mode === m.id && <Check size={18} aria-hidden />}
+                  </button>
 
-        <div className={`summary ${split.ok ? '' : 'invalid'}`}>
-          {!amountMinor
-            ? 'Enter an amount to see the split'
-            : !split.ok
-              ? split.error
-              : owedByOther === 0
-                ? 'Nobody owes anything for this one'
-                : payerIsMe
-                  ? `${otherName} owes you ${formatAud(owedByOther)}`
-                  : `You owe ${otherName} ${formatAud(owedByOther)}`}
-          {amountMinor && currency !== HOME && split.ok ? (
-            <small className="muted"> (of {formatMoney(amountMinor, currency)})</small>
-          ) : null}
+                  {mode === m.id && (m.id === 'custom_amount' || m.id === 'custom_percent') && (
+                    <div className="grid-2 split-inputs">
+                      {[me, other].map((p) => (
+                        <label className="field" key={p}>
+                          <span>
+                            {p === me ? 'Your' : `${otherName}'s`} {m.id === 'custom_percent' ? '%' : `share (${currency})`}
+                          </span>
+                          <input inputMode="decimal" value={custom[p] ?? ''} onChange={(e) => setCustomFor(p, e.target.value)} />
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {mode === m.id && m.id === 'extras' && (
+                    <div className="split-inputs">
+                      <div className="grid-2">
+                        {[me, other].map((p) => (
+                          <label className="field" key={p}>
+                            <span>
+                              Just {p === me ? 'yours' : `${otherName}'s`} ({currency})
+                            </span>
+                            <input
+                              inputMode={decimals(currency) ? 'decimal' : 'numeric'}
+                              placeholder="0"
+                              value={extras[p] ?? ''}
+                              onChange={(e) => setExtras({ ...extras, [p]: e.target.value })}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      {amountMinor && sharedMinor >= 0 ? (
+                        <small className="muted">The other {formatMoney(sharedMinor, currency)} is split equally.</small>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <div className="error">{error}</div>}
 
         <div className="btn-row sticky">
-          {existing && (
+          {existing ? (
             <button className="btn danger ghost" onClick={remove}>
               Delete
             </button>
+          ) : (
+            <button className="btn ghost" onClick={() => save(true)} disabled={saving}>
+              Save &amp; new
+            </button>
           )}
-          <button className="btn primary grow" onClick={save} disabled={saving}>
+          <button className="btn primary grow" onClick={() => save()} disabled={saving}>
             {existing ? 'Save changes' : 'Add expense'}
           </button>
         </div>

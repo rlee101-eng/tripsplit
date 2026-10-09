@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decimals, formatMoney, parseToMinor, toAudMinor } from './money'
-import { computeShares } from './splits'
+import { amountsWithExtras, computeShares } from './splits'
 import { netBalance, balancesByTrip } from './balances'
 import { settleEverything } from './settle'
 import { descriptionSuggestions, guessCategory } from './suggest'
@@ -101,6 +101,13 @@ describe('splits', () => {
     const r = computeShares({ ...base, totalAudMinor: 10000, type: 'custom_percent', input: { a: 7000, b: 3000 } })
     expect(r).toEqual({ ok: true, shares: { a: 7000, b: 3000 } })
     expect(computeShares({ ...base, type: 'custom_percent', input: { a: 7000, b: 2000 } }).ok).toBe(false)
+  })
+
+  it('equal except personal items', () => {
+    // ¥8,401 bill, ¥1,200 of it just B's: the other ¥7,201 is shared, the payer absorbing the odd yen.
+    expect(amountsWithExtras(8401, { b: 1200 }, A, [A, B])).toEqual({ ok: true, amounts: { a: 3601, b: 4800 } })
+    expect(amountsWithExtras(1000, { a: 600, b: 500 }, A, [A, B]).ok).toBe(false)
+    expect(amountsWithExtras(1000, { a: -1 }, A, [A, B]).ok).toBe(false)
   })
 
   it('rejects zero amount', () => {

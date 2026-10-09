@@ -63,6 +63,26 @@ export function computeShares(p: SplitParams): SplitResult {
   return { ok: true, shares }
 }
 
+/**
+ * "Split equally, except some items": each member's own items come off the top and
+ * the rest is shared equally. Returns per-member amounts in the original currency,
+ * to save as a custom_amount split. The payer absorbs any odd unit of the shared part.
+ */
+export function amountsWithExtras(
+  totalMinor: number,
+  extras: Record<string, number>,
+  payer: string,
+  members: string[],
+): { ok: true; amounts: Record<string, number> } | { ok: false; error: string } {
+  if (Object.values(extras).some((v) => v < 0 || !Number.isFinite(v))) return { ok: false, error: 'Amounts cannot be negative' }
+  const shared = totalMinor - members.reduce((sum, m) => sum + (extras[m] ?? 0), 0)
+  if (shared < 0) return { ok: false, error: 'Personal items come to more than the total' }
+  const each = Math.floor(shared / members.length)
+  const amounts = Object.fromEntries(members.map((m) => [m, (extras[m] ?? 0) + each]))
+  amounts[payer] += shared - each * members.length
+  return { ok: true, amounts }
+}
+
 function pickInput(p: SplitParams): Record<string, number> {
   return Object.fromEntries(p.members.map((m) => [m, Math.round(p.input?.[m] ?? 0)]))
 }
