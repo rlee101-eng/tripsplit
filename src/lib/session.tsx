@@ -70,6 +70,10 @@ export function useBootstrap() {
   useEffect(() => {
     void (async () => {
       if (LOCAL_MODE) await seedLocalMode()
+      else if (LOCAL_IDS.includes((await getMeta<string>('me')) as (typeof LOCAL_IDS)[number])) {
+        // Opened before Supabase was configured: drop the local-mode demo data.
+        await Promise.all(db.tables.map((t) => t.clear()))
+      }
       setReady(true)
     })()
   }, [])
