@@ -43,9 +43,9 @@ export function Login({ onCancel, onDone }: { onCancel?: () => void; onDone?: ()
 
   return (
     <main className="login">
-      <div className="logo">✈️⚖️</div>
+      <img className="logo" src="./icon.svg" alt="" width={64} height={64} />
       <h1>TripSplit</h1>
-      <p className="muted">Track who owes who while you travel.</p>
+      <p className="muted">Travel together. Settle up later.</p>
 
       <form
         className="card form"

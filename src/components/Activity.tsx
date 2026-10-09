@@ -2,6 +2,8 @@ import { categoryOf, type Expense, type Settlement } from '../lib/types'
 import { formatAud, formatMoney, HOME } from '../lib/money'
 import { formatDay } from '../lib/dates'
 import { useSession } from '../lib/session'
+import { Handshake } from 'lucide-react'
+import { CategoryTile } from './Icons'
 
 export type ActivityItem = { kind: 'expense'; item: Expense } | { kind: 'settlement'; item: Settlement }
 
@@ -59,7 +61,7 @@ function ExpenseRow({ e, tripName }: { e: Expense; tripName?: string }) {
   return (
     <li>
       <a className="row" href={`#/expense/${e.id}`}>
-        <span className="row-icon">{cat.icon}</span>
+        <CategoryTile id={cat.id} />
         <span className="row-main">
           <span className="row-title">{e.description || cat.label}</span>
           <span className="row-sub">
@@ -87,7 +89,9 @@ function SettlementRow({ s, onTap }: { s: Settlement; onTap?: (s: Settlement) =>
   return (
     <li>
       <button className="row settlement" onClick={() => onTap?.(s)}>
-        <span className="row-icon">🤝</span>
+        <span className="tile" data-cat="settlement">
+          <Handshake size={18} strokeWidth={1.75} aria-hidden />
+        </span>
         <span className="row-main">
           <span className="row-title">
             {name(s.from_user)} paid {name(s.to_user) === 'You' ? 'you' : name(s.to_user)}

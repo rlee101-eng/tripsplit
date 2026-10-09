@@ -14,9 +14,9 @@ export default defineConfig({
       manifest: {
         name: 'TripSplit',
         short_name: 'TripSplit',
-        description: 'Track who owes who while travelling.',
-        theme_color: '#0f766e',
-        background_color: '#f4f5f7',
+        description: 'Travel together. Settle up later.',
+        theme_color: '#2f5d55',
+        background_color: '#f5f0e8',
         display: 'standalone',
         start_url: '.',
         scope: '.',
@@ -28,7 +28,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: 'index.html',
       },
     }),

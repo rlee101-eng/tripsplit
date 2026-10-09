@@ -10,6 +10,7 @@ import { CATEGORIES } from '../lib/types'
 import { BalanceCard } from '../components/BalanceCard'
 import { ActivityList, mergeActivity } from '../components/Activity'
 import { BackButton, Empty, Header } from '../components/Layout'
+import { CategoryIcon } from '../components/Icons'
 
 export function TripPage({ id }: { id: string }) {
   const { me, partner, name } = useSession()
@@ -78,7 +79,7 @@ export function TripPage({ id }: { id: string }) {
                 className={`chip ${filter === c.id ? 'on' : ''}`}
                 onClick={() => setFilter(filter === c.id ? null : c.id)}
               >
-                {c.icon} {c.label} <small>{formatAud(catTotals.get(c.id)!)}</small>
+                <CategoryIcon id={c.id} size={16} /> {c.label} <small>{formatAud(catTotals.get(c.id)!)}</small>
               </button>
             ))}
           </div>

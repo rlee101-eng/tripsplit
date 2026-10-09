@@ -9,9 +9,10 @@ import { BalanceCard } from '../components/BalanceCard'
 import { ActivityList, mergeActivity } from '../components/Activity'
 import { Empty, Header } from '../components/Layout'
 import { WaitingForPartner } from '../components/WaitingForPartner'
+import { TripStamp } from '../components/Icons'
 
 export function Home() {
-  const { me, partner } = useSession()
+  const { me, meMember, partner } = useSession()
   const expenses = useLiveQuery(() => db.expenses.toArray(), [])
   const settlements = useLiveQuery(() => db.settlements.toArray(), [])
   const trips = useLiveQuery(() => db.trips.filter((t) => !t.deleted_at).toArray(), [])
@@ -30,6 +31,10 @@ export function Home() {
     <>
       <Header title="TripSplit" />
       <main>
+        <div className="greeting">
+          <span>{greeting()}</span>
+          <h2>{meMember?.display_name && partner ? `${meMember.display_name} & ${partner.display_name}` : 'Welcome'}</h2>
+        </div>
         {!partner ? (
           <WaitingForPartner />
         ) : (
@@ -55,12 +60,13 @@ export function Home() {
               return (
                 <li key={t.id}>
                   <a className="row" href={`#/trip/${t.id}`}>
+                    <TripStamp currency={t.default_currency} />
                     <span className="row-main">
                       <span className="row-title">{t.name}</span>
                       <span className="row-sub">{t.archived ? 'Archived' : t.default_currency}</span>
                     </span>
                     <span className={`row-amount ${b > 0 ? 'pos' : b < 0 ? 'neg' : ''}`}>
-                      {b === 0 ? <small>settled</small> : (
+                      {b === 0 ? <small>all square</small> : (
                         <>
                           <small>{b > 0 ? 'owed to you' : 'you owe'}</small>
                           {formatAud(Math.abs(b))}
@@ -83,4 +89,9 @@ export function Home() {
       </main>
     </>
   )
+}
+
+function greeting() {
+  const h = new Date().getHours()
+  return h < 5 ? 'Good evening' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }

@@ -6,6 +6,7 @@ import { createTrip, updateTrip } from '../lib/mutations'
 import { go } from '../lib/router'
 import type { Trip } from '../lib/types'
 import { Empty, Header } from '../components/Layout'
+import { TripStamp } from '../components/Icons'
 
 export function Trips() {
   const trips = useLiveQuery(() => db.trips.filter((t) => !t.deleted_at).toArray(), [])
@@ -37,6 +38,7 @@ export function Trips() {
     ) : (
       <li key={t.id}>
         <div className="row">
+          <TripStamp currency={t.default_currency} />
           <a className="row-main" href={`#/trip/${t.id}`}>
             <span className="row-title">{t.name}</span>
             <span className="row-sub">

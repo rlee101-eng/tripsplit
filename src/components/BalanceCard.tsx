@@ -33,7 +33,10 @@ export function BalanceCard({
     <div className={`balance-card ${net > 0 ? 'pos' : net < 0 ? 'neg' : 'zero'}`}>
       {label && <div className="balance-label">{label}</div>}
       {net === 0 ? (
-        <div className="balance-main">All settled up 🎉</div>
+        <>
+          <div className="balance-amount">All square</div>
+          <div className="balance-who">Nothing owed between you two</div>
+        </>
       ) : (
         <>
           <div className="balance-who">{net > 0 ? `${other} owes you` : `You owe ${other}`}</div>

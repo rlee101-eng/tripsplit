@@ -10,6 +10,7 @@ import { deleteExpense, saveExpense } from '../lib/mutations'
 import { back } from '../lib/router'
 import { CATEGORIES, type Expense, type SplitType } from '../lib/types'
 import { BackButton, Empty, Header } from '../components/Layout'
+import { CategoryIcon } from '../components/Icons'
 
 interface RateState {
   rate: number
@@ -306,7 +307,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
         <div className="chips wrap">
           {CATEGORIES.map((c) => (
             <button key={c.id} className={`chip ${category === c.id ? 'on' : ''}`} onClick={() => setCategory(c.id)}>
-              {c.icon} {c.label}
+              <CategoryIcon id={c.id} size={16} /> {c.label}
             </button>
           ))}
         </div>

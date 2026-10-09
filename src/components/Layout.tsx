@@ -1,4 +1,5 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
+import { ChevronLeft, Handshake, Luggage, Plus, Scale, Settings2, type LucideIcon } from 'lucide-react'
 import { syncStore, syncNow } from '../lib/sync'
 import { LOCAL_MODE } from '../lib/supabase'
 import type { Route } from '../lib/router'
@@ -16,7 +17,7 @@ export function Header({ title, left, right }: { title: string; left?: ReactNode
 export function BackButton({ href }: { href?: string }) {
   return (
     <button className="icon-btn" aria-label="Back" onClick={() => (href ? (location.hash = href) : history.back())}>
-      ‹
+      <ChevronLeft size={26} strokeWidth={1.75} />
     </button>
   )
 }
@@ -40,21 +41,21 @@ export function SyncBadge() {
 
 export function BottomNav({ route }: { route: Route }) {
   const tripId = route.page === 'trip' ? route.id : undefined
-  const item = (href: string, icon: string, label: string, active: boolean) => (
-    <a href={href} className={active ? 'active' : ''}>
-      <span className="nav-icon">{icon}</span>
+  const item = (href: string, Icon: LucideIcon, label: string, active: boolean) => (
+    <a href={href} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
+      <Icon size={22} strokeWidth={active ? 2 : 1.6} aria-hidden />
       {label}
     </a>
   )
   return (
     <nav className="bottomnav">
-      {item('#/', '⚖️', 'Balance', route.page === 'home')}
-      {item('#/trips', '🧳', 'Trips', route.page === 'trips' || route.page === 'trip')}
+      {item('#/', Scale, 'Balance', route.page === 'home')}
+      {item('#/trips', Luggage, 'Trips', route.page === 'trips' || route.page === 'trip')}
       <a href={tripId ? `#/expense?trip=${tripId}` : '#/expense'} className="add" aria-label="Add expense">
-        +
+        <Plus size={26} strokeWidth={2} aria-hidden />
       </a>
-      {item('#/settle', '🤝', 'Settle', route.page === 'settle')}
-      {item('#/settings', '⚙️', 'Settings', route.page === 'settings')}
+      {item('#/settle', Handshake, 'Settle', route.page === 'settle')}
+      {item('#/settings', Settings2, 'Settings', route.page === 'settings')}
     </nav>
   )
 }
