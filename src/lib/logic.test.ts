@@ -3,6 +3,7 @@ import { decimals, formatMoney, parseToMinor, toAudMinor } from './money'
 import { computeShares } from './splits'
 import { netBalance, balancesByTrip } from './balances'
 import { settleEverything } from './settle'
+import { descriptionSuggestions, guessCategory } from './suggest'
 import type { Expense, Settlement } from './types'
 
 const A = 'a'
@@ -140,5 +141,38 @@ describe('balances', () => {
     const s = { id: 's', trip_id: 't1', from_user: B, to_user: A, amount_aud_minor: 2000, date: '', note: '', created_by: B, updated_at: '', deleted_at: null }
     expect(netBalance(A, ex, [s])).toBe(3000)
     expect(netBalance(B, ex, [s])).toBe(-3000)
+  })
+})
+
+describe('suggestions', () => {
+  const past = [
+    expense({ description: 'Suica top-up', category: 'transport', date: '2026-10-01' }),
+    expense({ description: 'suica top-up', category: 'transport', date: '2026-10-03' }),
+    expense({ description: 'Sushi train', category: 'food', date: '2026-10-02' }),
+    expense({ description: 'Lunch at Suika café', category: 'food', date: '2026-10-02' }),
+    expense({ description: 'Old taxi', category: 'transport', deleted_at: '2026-10-04' }),
+  ]
+
+  it('guesses from past descriptions first, then keywords', () => {
+    expect(guessCategory('  SUSHI   train ', past)).toBe('food')
+    expect(guessCategory('Ramen at Ichiran')).toBe('food')
+    expect(guessCategory('Taxi to the hotel')).toBe('transport')
+    expect(guessCategory('Ryokan, 2 nights')).toBe('accommodation')
+    expect(guessCategory('7-Eleven')).toBe('groceries')
+    expect(guessCategory('Barbershop')).toBeNull() // "bar" only as a whole word
+    expect(guessCategory('')).toBeNull()
+  })
+
+  it('suggests one entry per description, most used first, prefix matches before word matches', () => {
+    expect(descriptionSuggestions('s', past)).toEqual([])
+    const s = descriptionSuggestions('su', past)
+    expect(s.map((e) => e.description)).toEqual(['suica top-up', 'Sushi train', 'Lunch at Suika café'])
+    expect(s[0].date).toBe('2026-10-03')
+    expect(descriptionSuggestions('top', past).map((e) => e.description)).toEqual(['suica top-up'])
+  })
+
+  it('stops suggesting once the text matches exactly, and ignores deleted expenses', () => {
+    expect(descriptionSuggestions('Sushi train', past)).toEqual([])
+    expect(descriptionSuggestions('old', past)).toEqual([])
   })
 })

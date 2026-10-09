@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { LOCAL_MODE } from './lib/supabase'
 import { SessionProvider, useBootstrap, useMe } from './lib/session'
 import { useRoute, type Route } from './lib/router'
@@ -16,6 +16,12 @@ export default function App() {
   const { me } = useMe()
   const route = useRoute()
   const [signingInAgain, setSigningInAgain] = useState(false)
+
+  // Forms always open at the top, so the amount field is in view whatever page you came from.
+  const formKey = route.page === 'expense' || route.page === 'settle' ? JSON.stringify(route) : null
+  useLayoutEffect(() => {
+    if (formKey) window.scrollTo(0, 0)
+  }, [formKey])
 
   if (!ready || me === undefined) return null
 

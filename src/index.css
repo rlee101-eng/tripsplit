@@ -332,6 +332,16 @@ input.amount {
 .rate-edit span { white-space: nowrap; }
 .rate-edit input { min-height: 40px; }
 .warn-text { color: var(--warn); font-size: 13px; }
+.chips.suggestions { margin-top: -8px; margin-bottom: 0; }
+
+.meta-line {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 10px 14px;
+  border: 0; border-radius: 14px; background: var(--surface-2); color: var(--text);
+  font-size: 14px; text-align: left; cursor: pointer;
+}
+.meta-line svg { flex: none; color: var(--muted); }
+.meta-line > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .link { background: none; border: 0; color: var(--accent); padding: 0; cursor: pointer; font-size: 14px; font-weight: 500; }
 
 .segmented { display: flex; background: var(--surface-2); border-radius: 14px; padding: 4px; gap: 4px; }

@@ -5,6 +5,14 @@ export function todayLocal(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** "Today", "Yesterday", or the formatted day. */
+export function dayLabel(date: string): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const yesterday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return date === todayLocal() ? 'Today' : date === yesterday ? 'Yesterday' : formatDay(date)
+}
+
 export function nowIso(): string {
   return new Date().toISOString()
 }

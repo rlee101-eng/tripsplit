@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { CalendarDays } from 'lucide-react'
 import { db, getMeta } from '../lib/db'
 import { CURRENCIES, decimals, formatAud, formatMoney, HOME, minorToInput, parseToMinor, symbol, toAudMinor } from '../lib/money'
 import { computeShares } from '../lib/splits'
 import { getRate } from '../lib/fx'
-import { todayLocal, uuid } from '../lib/dates'
+import { dayLabel, todayLocal, uuid } from '../lib/dates'
+import { descriptionSuggestions, guessCategory } from '../lib/suggest'
 import { useSession } from '../lib/session'
 import { deleteExpense, saveExpense } from '../lib/mutations'
 import { back } from '../lib/router'
@@ -25,6 +27,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const trips = useLiveQuery(() => db.trips.filter((t) => !t.deleted_at && !t.archived).toArray(), [])
   const existing = useLiveQuery(async () => (id ? ((await db.expenses.get(id)) ?? null) : null), [id])
   const lastTripId = useLiveQuery(async () => (await getMeta<string>('lastTripId')) ?? null, [])
+  const past = useLiveQuery(() => db.expenses.filter((e) => !e.deleted_at).toArray(), [])
 
   const [loaded, setLoaded] = useState(false)
   const [tripId, setTripId] = useState('')
@@ -32,6 +35,10 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const [currency, setCurrency] = useState(HOME)
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('food')
+  /** Once the category is chosen by hand (or by picking a suggestion), stop guessing it. */
+  const [categoryTouched, setCategoryTouched] = useState(false)
+  /** Date and trip are usually right, so they sit behind a one-line summary. */
+  const [showDetails, setShowDetails] = useState(false)
   const [date, setDate] = useState(todayLocal())
   const [paidBy, setPaidBy] = useState(me)
   const [splitType, setSplitType] = useState<SplitType>('equal')
@@ -53,6 +60,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       setCurrency(existing.currency)
       setDescription(existing.description)
       setCategory(existing.category)
+      setCategoryTouched(true)
       setDate(existing.date)
       setPaidBy(existing.paid_by)
       setSplitType(existing.split_type)
@@ -195,9 +203,36 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setError('')
   }
 
+  const suggestions = existing ? [] : descriptionSuggestions(description, past ?? [])
+
+  const changeDescription = (v: string) => {
+    setDescription(v)
+    if (!categoryTouched) setCategory(guessCategory(v, past ?? []) ?? 'food')
+  }
+
+  /** Fill the form from a past expense with the same description (everything but the amount). */
+  const applySuggestion = (e: Expense) => {
+    setDescription(e.description)
+    setCategory(e.category)
+    setCategoryTouched(true)
+    if (members.includes(e.paid_by)) setPaidBy(e.paid_by)
+    if (e.split_type === 'custom_percent' && e.split_input) {
+      setSplitType('custom_percent')
+      setCustom(Object.fromEntries(Object.entries(e.split_input).map(([k, v]) => [k, String(v / 100)])))
+    } else if (e.split_type !== 'custom_amount') {
+      // Custom amounts belonged to the old total, so they don't carry over.
+      setSplitType(e.split_type)
+    }
+  }
+
+  const tripName = trips?.find((t) => t.id === tripId)?.name ?? (existing ? '(archived trip)' : 'Choose a trip')
+
   const save = async () => {
     setError('')
-    if (!tripId) return setError('Choose a trip')
+    if (!tripId) {
+      setShowDetails(true)
+      return setError('Choose a trip')
+    }
     if (!amountMinor) return setError('Enter an amount')
     if (!rateOk) return setError('Enter an exchange rate (you appear to be offline)')
     if (!split.ok) return setError(split.error)
@@ -301,34 +336,61 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
 
         <label className="field">
           <span>Description</span>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Ramen at Ichiran" />
+          <input value={description} onChange={(e) => changeDescription(e.target.value)} placeholder="e.g. Ramen at Ichiran" />
         </label>
+
+        {suggestions.length > 0 && (
+          <div className="chips scroll suggestions" aria-label="Past expenses">
+            {suggestions.map((e) => (
+              <button key={e.id} className="chip" onClick={() => applySuggestion(e)}>
+                <CategoryIcon id={e.category} size={16} /> {e.description}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="chips wrap">
           {CATEGORIES.map((c) => (
-            <button key={c.id} className={`chip ${category === c.id ? 'on' : ''}`} onClick={() => setCategory(c.id)}>
+            <button
+              key={c.id}
+              className={`chip ${category === c.id ? 'on' : ''}`}
+              onClick={() => {
+                setCategory(c.id)
+                setCategoryTouched(true)
+              }}
+            >
               <CategoryIcon id={c.id} size={16} /> {c.label}
             </button>
           ))}
         </div>
 
-        <div className="grid-2">
-          <label className="field">
-            <span>Date</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          <label className="field">
-            <span>Trip</span>
-            <select value={tripId} onChange={(e) => setTripId(e.target.value)}>
-              {existing && !trips?.some((t) => t.id === existing.trip_id) && <option value={existing.trip_id}>(archived trip)</option>}
-              {trips?.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {!showDetails ? (
+          <button className="meta-line" onClick={() => setShowDetails(true)}>
+            <CalendarDays size={16} strokeWidth={1.75} aria-hidden />
+            <span>
+              {dayLabel(date)} · {tripName}
+            </span>
+            <span className="link">Change</span>
+          </button>
+        ) : (
+          <div className="grid-2">
+            <label className="field">
+              <span>Date</span>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </label>
+            <label className="field">
+              <span>Trip</span>
+              <select value={tripId} onChange={(e) => setTripId(e.target.value)}>
+                {existing && !trips?.some((t) => t.id === existing.trip_id) && <option value={existing.trip_id}>(archived trip)</option>}
+                {trips?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
 
         <div className="field">
           <span>Paid by</span>
