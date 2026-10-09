@@ -118,4 +118,8 @@ create policy "members only" on public.expenses
 create policy "members only" on public.settlements
   for all to authenticated using (public.is_member()) with check (public.is_member());
 
+-- Explicit grants, so this works with "Automatically expose new tables" turned off.
+-- Only signed-in users get access; the anonymous role gets nothing.
+grant usage on schema public to authenticated;
 grant select, insert, update on public.members, public.trips, public.expenses, public.settlements to authenticated;
+grant execute on function public.is_member(), public.member_count() to authenticated;
