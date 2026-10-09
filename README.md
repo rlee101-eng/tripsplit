@@ -49,7 +49,7 @@ npm test        # unit tests for money/split/balance logic
 
 ## Good to know
 
-- **Supabase pauses free projects after about a week with no activity.** Nothing is lost. If the app shows "Sync error" after a quiet spell, log in to supabase.com and click **Restore project**. Open the app a few days before each trip.
+- **Supabase pauses free projects after about a week with no activity.** The **Keep Supabase awake** GitHub Action calls the database every three days to prevent this. It needs the `keepalive()` function from the end of `schema.sql`, so if you set up the database before that existed, run that last section in the SQL Editor. GitHub turns off scheduled actions after 60 days without a commit and emails you; re-enable it under **Actions**. If the project does pause, nothing is lost: log in to supabase.com and click **Restore project**.
 - **Offline:** expenses save on your phone right away. If you're offline when adding a foreign-currency expense, the last known rate is used and marked "rate pending". It's replaced with the correct rate for that date once you're back online. If you've never fetched a rate for that currency, you'll be asked to enter one.
 - **Both phones edit the same expense:** the most recent edit wins.
 - **Settings → Export CSV** downloads everything.

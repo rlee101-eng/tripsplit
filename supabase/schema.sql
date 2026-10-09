@@ -123,3 +123,13 @@ create policy "members only" on public.settlements
 grant usage on schema public to authenticated;
 grant select, insert, update on public.members, public.trips, public.expenses, public.settlements to authenticated;
 grant execute on function public.is_member(), public.member_count() to authenticated;
+
+-- ── Keep-alive ──────────────────────────────────────────────────────────
+-- Supabase pauses free projects after about a week idle. A scheduled GitHub
+-- Action (.github/workflows/keepalive.yml) calls this every few days. It reads
+-- no data, so letting the anonymous role call it exposes nothing.
+create or replace function public.keepalive() returns integer
+language sql stable as $$ select 1 $$;
+
+grant usage on schema public to anon;
+grant execute on function public.keepalive() to anon;
