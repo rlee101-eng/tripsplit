@@ -28,37 +28,36 @@
   --nav-h: 66px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: var(--sans);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ...and a quiet night sea after dark. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111615;
-    --surface: #192020;
-    --surface-2: #222a29;
-    --text: #ece6dc;
-    --muted: #9a958b;
-    --border: #2a3331;
-    --accent: #8fc2b0;
-    --accent-text: #0f2420;
-    --pos: #8fc2b0;
-    --pos-bg: #19302b;
-    --neg: #e3a582;
-    --neg-bg: #33241c;
-    --danger: #ef8f7a;
-    --warn: #e2bd6b;
-    --hero-from: #24443e;
-    --hero-to: #132724;
-    --hero-text: #f2ebdf;
-    --glow: rgb(230 170 120 / 0.2);
-    --shadow: none;
-    --shadow-lift: 0 18px 40px rgb(0 0 0 / 0.45);
-    --card-border: var(--border);
-  }
+/* ...and a quiet night sea after dark. data-theme is set by the script in index.html (see lib/theme.ts). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111615;
+  --surface: #192020;
+  --surface-2: #222a29;
+  --text: #ece6dc;
+  --muted: #9a958b;
+  --border: #2a3331;
+  --accent: #8fc2b0;
+  --accent-text: #0f2420;
+  --pos: #8fc2b0;
+  --pos-bg: #19302b;
+  --neg: #e3a582;
+  --neg-bg: #33241c;
+  --danger: #ef8f7a;
+  --warn: #e2bd6b;
+  --hero-from: #24443e;
+  --hero-to: #132724;
+  --hero-text: #f2ebdf;
+  --glow: rgb(230 170 120 / 0.2);
+  --shadow: none;
+  --shadow-lift: 0 18px 40px rgb(0 0 0 / 0.45);
+  --card-border: var(--border);
 }
 
 * { box-sizing: border-box; }
@@ -257,9 +256,7 @@ a.row:active, button.row:active { background: color-mix(in srgb, var(--surface-2
 .tile[data-cat='shopping'] { --tint: #b08640; }
 .tile[data-cat='groceries'] { --tint: #6f8248; }
 .tile[data-cat='settlement'] { --tint: var(--accent); }
-@media (prefers-color-scheme: dark) {
-  .tile { background: color-mix(in srgb, var(--tint) 20%, var(--surface)); color: color-mix(in srgb, var(--tint) 55%, #fff); }
-}
+[data-theme='dark'] .tile { background: color-mix(in srgb, var(--tint) 20%, var(--surface)); color: color-mix(in srgb, var(--tint) 55%, #fff); }
 
 .stamp {
   flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px;

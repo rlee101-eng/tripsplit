@@ -6,11 +6,13 @@ import { signOut, useSession } from '../lib/session'
 import { renameMember } from '../lib/mutations'
 import { syncNow } from '../lib/sync'
 import { exportCsv } from '../lib/csv'
+import { setThemePref, useThemePref, type ThemePref } from '../lib/theme'
 import { Header, useSyncState } from '../components/Layout'
 
 export function Settings({ onSignInAgain }: { onSignInAgain: () => void }) {
   const { me, meMember, partner, members, name } = useSession()
   const sync = useSyncState()
+  const theme = useThemePref()
   const unsynced = useLiveQuery(async () => {
     let n = 0
     for (const t of [db.trips, db.expenses, db.settlements, db.members]) n += await t.where('dirty').equals(1).count()
@@ -27,6 +29,17 @@ export function Settings({ onSignInAgain }: { onSignInAgain: () => void }) {
             <NameField key={m.user_id} id={m.user_id} label={m.user_id === me ? 'Your name' : 'Partner’s name'} value={m.display_name} />
           ))}
           {!LOCAL_MODE && partner && <p className="muted">Partner: {partner.display_name} (they can change this on their phone)</p>}
+        </div>
+
+        <h2 className="section-title">Appearance</h2>
+        <div className="card form compact">
+          <div className="segmented">
+            {(['system', 'light', 'dark'] as ThemePref[]).map((t) => (
+              <button key={t} className={theme === t ? 'on' : ''} onClick={() => setThemePref(t)}>
+                {t === 'system' ? 'Automatic' : t === 'light' ? 'Light' : 'Dark'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {LOCAL_MODE && (
