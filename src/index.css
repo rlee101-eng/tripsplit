@@ -135,8 +135,9 @@ main { padding: 0 18px 16px; animation: rise 0.4s var(--ease) both; }
 @keyframes pulse { 50% { opacity: .3; } }
 
 /* Greeting */
-.greeting { margin: 6px 2px 16px; }
-.greeting span { font-size: 14px; color: var(--muted); }
+.greeting { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; margin: 6px 2px 0; }
+.greeting > div:first-child { flex: 1; min-width: 0; padding-bottom: 16px; }
+.greeting > div > span { font-size: 14px; color: var(--muted); }
 .greeting h2 {
   margin: 2px 0 0; font-family: var(--serif); font-weight: 400; font-size: 30px;
   line-height: 1.1; letter-spacing: -0.015em;
@@ -559,8 +560,8 @@ input.bare:focus { box-shadow: none; }
 }
 
 /* The cats */
-.perch { position: relative; padding-top: 30px; }
-.cats { position: absolute; z-index: 2; top: -15px; right: 22px; display: flex; align-items: flex-end; gap: 2px; }
+/* Sits at the end of the greeting row; the negative margin drops the paws onto the card below. */
+.cats { position: relative; z-index: 2; flex: none; display: flex; align-items: flex-end; margin: 0 14px -14px 0; }
 .kitty {
   position: relative; display: block; padding: 0; border: 0; background: none; cursor: pointer;
   transition: transform 0.3s var(--ease); -webkit-tap-highlight-color: transparent;

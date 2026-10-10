@@ -80,30 +80,30 @@ export function Home() {
       />
       <main>
         <div className="greeting">
-          <span>{greeting()}</span>
-          <h2>
-            {meMember?.display_name && partner ? (
-              <>
-                {meMember.display_name} <Heart className="amp" size={18} aria-label="and" /> {partner.display_name}
-              </>
-            ) : (
-              'Welcome'
-            )}
-          </h2>
-        </div>
-        {/* The cats peek over the card; they're extra happy when nothing is owed. */}
-        <div className="perch">
+          <div>
+            <span>{greeting()}</span>
+            <h2>
+              {meMember?.display_name && partner ? (
+                <>
+                  {meMember.display_name} <Heart className="amp" size={18} aria-label="and" /> {partner.display_name}
+                </>
+              ) : (
+                'Welcome'
+              )}
+            </h2>
+          </div>
+          {/* The cats rest their paws on the card below; they're extra happy when nothing is owed. */}
           <Cats happy={!!partner && net === 0} />
-          {!partner ? (
-            <WaitingForPartner />
-          ) : (
-            <BalanceCard
-              net={net}
-              label="Between you two"
-              onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements), 'Marked as settled')}
-            />
-          )}
         </div>
+        {!partner ? (
+          <WaitingForPartner />
+        ) : (
+          <BalanceCard
+            net={net}
+            label="Between you two"
+            onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements), 'Marked as settled')}
+          />
+        )}
 
         <h2 className="section-title">
           Trips
