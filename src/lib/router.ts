@@ -4,7 +4,7 @@ export type Route =
   | { page: 'home' }
   | { page: 'trip'; id: string }
   | { page: 'expense'; id?: string; tripId?: string }
-  | { page: 'settle'; tripId?: string }
+  | { page: 'settle'; tripId: string }
   | { page: 'settings' }
 
 export function parseHash(hash: string): Route {
@@ -17,7 +17,7 @@ export function parseHash(hash: string): Route {
     case 'expense':
       return { page: 'expense', id: b || undefined, tripId: params.get('trip') ?? undefined }
     case 'settle':
-      return { page: 'settle', tripId: params.get('trip') ?? undefined }
+      return params.get('trip') ? { page: 'settle', tripId: params.get('trip')! } : { page: 'home' }
     case 'settings':
       return { page: 'settings' }
     default:

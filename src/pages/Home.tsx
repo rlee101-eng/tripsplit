@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Plus, Settings } from 'lucide-react'
 import { db } from '../lib/db'
 import { balancesByTrip, netBalance } from '../lib/balances'
 import { CURRENCIES, formatAud } from '../lib/money'
@@ -10,7 +10,7 @@ import { createTrip, saveSettlements } from '../lib/mutations'
 import { go } from '../lib/router'
 import type { Trip } from '../lib/types'
 import { BalanceCard } from '../components/BalanceCard'
-import { Header } from '../components/Layout'
+import { Header, SyncBadge } from '../components/Layout'
 import { WaitingForPartner } from '../components/WaitingForPartner'
 import { TripStamp } from '../components/Icons'
 
@@ -68,7 +68,15 @@ export function Home() {
 
   return (
     <>
-      <Header title="TripSplit" />
+      <Header
+        title="TripSplit"
+        left={<SyncBadge />}
+        right={
+          <a className="icon-btn" href="#/settings" aria-label="Settings">
+            <Settings size={22} strokeWidth={1.75} />
+          </a>
+        }
+      />
       <main>
         <div className="greeting">
           <span>{greeting()}</span>
@@ -80,7 +88,6 @@ export function Home() {
           <BalanceCard
             net={net}
             label="Overall balance"
-            partialHref="#/settle"
             onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements))}
           />
         )}

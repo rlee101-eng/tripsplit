@@ -12,7 +12,8 @@ export function BalanceCard({
   net: number
   label?: string
   onSettle: () => Promise<void>
-  partialHref: string
+  /** Where to record a part payment. Omit where there's no single trip to record it against. */
+  partialHref?: string
 }) {
   const { partner } = useSession()
   const [confirming, setConfirming] = useState(false)
@@ -63,9 +64,11 @@ export function BalanceCard({
             <button className="btn primary" onClick={() => setConfirming(true)}>
               Mark as settled
             </button>
-            <a className="btn ghost" href={partialHref}>
-              Partial payment
-            </a>
+            {partialHref && (
+              <a className="btn ghost" href={partialHref}>
+                Partial payment
+              </a>
+            )}
           </div>
         ))}
     </div>

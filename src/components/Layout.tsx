@@ -1,8 +1,7 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
-import { ChevronLeft, Handshake, Luggage, Settings2, type LucideIcon } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { syncStore, syncNow } from '../lib/sync'
 import { LOCAL_MODE } from '../lib/supabase'
-import type { Route } from '../lib/router'
 
 export function Header({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
   return (
@@ -36,22 +35,6 @@ export function SyncBadge() {
       <span className="dot" />
       {label}
     </button>
-  )
-}
-
-export function BottomNav({ route }: { route: Route }) {
-  const item = (href: string, Icon: LucideIcon, label: string, active: boolean) => (
-    <a href={href} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
-      <Icon size={22} strokeWidth={active ? 2 : 1.6} aria-hidden />
-      {label}
-    </a>
-  )
-  return (
-    <nav className="bottomnav">
-      {item('#/', Luggage, 'Trips', route.page === 'home' || route.page === 'trip')}
-      {item('#/settle', Handshake, 'Settle', route.page === 'settle')}
-      {item('#/settings', Settings2, 'Settings', route.page === 'settings')}
-    </nav>
   )
 }
 

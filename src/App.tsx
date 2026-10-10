@@ -2,7 +2,6 @@ import { useLayoutEffect, useState } from 'react'
 import { LOCAL_MODE } from './lib/supabase'
 import { SessionProvider, useBootstrap, useMe } from './lib/session'
 import { useRoute, type Route } from './lib/router'
-import { BottomNav } from './components/Layout'
 import { Home } from './pages/Home'
 import { TripPage } from './pages/TripPage'
 import { ExpenseForm } from './pages/ExpenseForm'
@@ -38,8 +37,6 @@ export default function App() {
     <SessionProvider me={me}>
       <div className="app">
         <Page route={route} onSignInAgain={() => setSigningInAgain(true)} />
-        {/* The expense form is a full-screen task with its own action bar. */}
-        {route.page !== 'expense' && <BottomNav route={route} />}
       </div>
     </SessionProvider>
   )
@@ -54,7 +51,7 @@ function Page({ route, onSignInAgain }: { route: Route; onSignInAgain: () => voi
     case 'expense':
       return <ExpenseForm key={route.id ?? 'new'} id={route.id} tripId={route.tripId} />
     case 'settle':
-      return <SettleForm key={route.tripId ?? 'any'} tripId={route.tripId} />
+      return <SettleForm key={route.tripId} tripId={route.tripId} />
     case 'settings':
       return <Settings onSignInAgain={onSignInAgain} />
   }

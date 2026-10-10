@@ -7,7 +7,7 @@ import { renameMember } from '../lib/mutations'
 import { syncNow } from '../lib/sync'
 import { exportCsv } from '../lib/csv'
 import { setThemePref, useThemePref, type ThemePref } from '../lib/theme'
-import { Header, useSyncState } from '../components/Layout'
+import { BackButton, Header, useSyncState } from '../components/Layout'
 
 export function Settings({ onSignInAgain }: { onSignInAgain: () => void }) {
   const { me, meMember, partner, members, name } = useSession()
@@ -21,7 +21,7 @@ export function Settings({ onSignInAgain }: { onSignInAgain: () => void }) {
 
   return (
     <>
-      <Header title="Settings" />
+      <Header title="Settings" left={<BackButton href="#/" />} />
       <main>
         <h2 className="section-title">Names</h2>
         <div className="card form compact">
