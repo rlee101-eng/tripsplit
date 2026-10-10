@@ -498,7 +498,19 @@ input.bare:focus { box-shadow: none; }
   background: none; font: inherit; text-align: center;
 }
 .split-pct input:focus { box-shadow: none; border-bottom-color: var(--accent); border-bottom-style: solid; }
-.split-share { min-height: 20px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: pre; }
+.split-money { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-height: 24px; }
+.split-side:last-child .split-money { justify-content: flex-end; }
+.split-amount {
+  display: inline-flex; align-items: baseline; font-size: 15.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums; cursor: text;
+}
+.split-amount input {
+  min-width: 1ch; min-height: 0; padding: 0 0 1px; border: 0; border-bottom: 1.5px dashed var(--border); border-radius: 0;
+  background: none; font: inherit; text-align: center;
+}
+.split-amount input:focus { box-shadow: none; border-bottom-color: var(--accent); border-bottom-style: solid; }
+.split-amount input:disabled { opacity: 0.5; }
+.split-share { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .split-slider {
   -webkit-appearance: none; appearance: none; display: block; width: calc(100% - 36px); min-height: 0; height: 30px;
