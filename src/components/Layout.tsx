@@ -1,5 +1,5 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
-import { ChevronLeft, Handshake, Luggage, Plus, Scale, Settings2, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, Handshake, Luggage, Settings2, type LucideIcon } from 'lucide-react'
 import { syncStore, syncNow } from '../lib/sync'
 import { LOCAL_MODE } from '../lib/supabase'
 import type { Route } from '../lib/router'
@@ -40,7 +40,6 @@ export function SyncBadge() {
 }
 
 export function BottomNav({ route }: { route: Route }) {
-  const tripId = route.page === 'trip' ? route.id : undefined
   const item = (href: string, Icon: LucideIcon, label: string, active: boolean) => (
     <a href={href} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
       <Icon size={22} strokeWidth={active ? 2 : 1.6} aria-hidden />
@@ -49,11 +48,7 @@ export function BottomNav({ route }: { route: Route }) {
   )
   return (
     <nav className="bottomnav">
-      {item('#/', Scale, 'Balance', route.page === 'home')}
-      {item('#/trips', Luggage, 'Trips', route.page === 'trips' || route.page === 'trip')}
-      <a href={tripId ? `#/expense?trip=${tripId}` : '#/expense'} className="add" aria-label="Add expense">
-        <Plus size={26} strokeWidth={2} aria-hidden />
-      </a>
+      {item('#/', Luggage, 'Trips', route.page === 'home' || route.page === 'trip')}
       {item('#/settle', Handshake, 'Settle', route.page === 'settle')}
       {item('#/settings', Settings2, 'Settings', route.page === 'settings')}
     </nav>

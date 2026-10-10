@@ -2,7 +2,6 @@ import { useSyncExternalStore } from 'react'
 
 export type Route =
   | { page: 'home' }
-  | { page: 'trips' }
   | { page: 'trip'; id: string }
   | { page: 'expense'; id?: string; tripId?: string }
   | { page: 'settle'; tripId?: string }
@@ -13,10 +12,8 @@ export function parseHash(hash: string): Route {
   const params = new URLSearchParams(query)
   const [a, b] = path.split('/')
   switch (a) {
-    case 'trips':
-      return { page: 'trips' }
     case 'trip':
-      return b ? { page: 'trip', id: b } : { page: 'trips' }
+      return b ? { page: 'trip', id: b } : { page: 'home' }
     case 'expense':
       return { page: 'expense', id: b || undefined, tripId: params.get('trip') ?? undefined }
     case 'settle':

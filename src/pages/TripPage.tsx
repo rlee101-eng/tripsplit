@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Plus } from 'lucide-react'
 import { db } from '../lib/db'
 import { netBalance, spendingByMember } from '../lib/balances'
 import { formatAud } from '../lib/money'
@@ -11,6 +12,7 @@ import { BalanceCard } from '../components/BalanceCard'
 import { ActivityList, mergeActivity } from '../components/Activity'
 import { BackButton, Empty, Header } from '../components/Layout'
 import { CategoryIcon } from '../components/Icons'
+import { TripEditor } from '../components/TripEditor'
 
 export function TripPage({ id }: { id: string }) {
   const { me, partner, name } = useSession()
@@ -18,8 +20,9 @@ export function TripPage({ id }: { id: string }) {
   const expenses = useLiveQuery(() => db.expenses.where('trip_id').equals(id).toArray(), [id])
   const settlements = useLiveQuery(() => db.settlements.where('trip_id').equals(id).toArray(), [id])
   const [filter, setFilter] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
 
-  if (!trip || !expenses || !settlements) return <Header title="Trip" left={<BackButton href="#/trips" />} />
+  if (!trip || !expenses || !settlements) return <Header title="Trip" left={<BackButton href="#/" />} />
 
   const live = expenses.filter((e) => !e.deleted_at)
   const net = netBalance(me, expenses, settlements)
@@ -37,7 +40,7 @@ export function TripPage({ id }: { id: string }) {
 
   return (
     <>
-      <Header title={trip.name} left={<BackButton href="#/trips" />} />
+      <Header title={trip.name} left={<BackButton href="#/" />} />
       <main>
         {partner && (
           <BalanceCard
@@ -86,13 +89,27 @@ export function TripPage({ id }: { id: string }) {
         )}
 
         {items.length === 0 ? (
-          <Empty>
-            No expenses yet. Tap <b>+</b> to add one.
-          </Empty>
+          <Empty>No expenses yet. Add the first one below.</Empty>
         ) : (
           <ActivityList items={items} onSettlementTap={onSettlementTap} />
         )}
+
+        <div className="trip-settings">
+          {editing ? (
+            <TripEditor trip={trip} expenseCount={live.length} onDone={() => setEditing(false)} />
+          ) : (
+            <button className="link" onClick={() => setEditing(true)}>
+              Rename or archive this trip
+            </button>
+          )}
+        </div>
       </main>
+
+      {!trip.archived && !editing && (
+        <a className="fab" href={`#/expense?trip=${id}`}>
+          <Plus size={20} strokeWidth={2.25} aria-hidden /> Add expense
+        </a>
+      )}
     </>
   )
 }

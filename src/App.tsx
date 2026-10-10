@@ -5,7 +5,6 @@ import { useRoute, type Route } from './lib/router'
 import { BottomNav } from './components/Layout'
 import { Home } from './pages/Home'
 import { TripPage } from './pages/TripPage'
-import { Trips } from './pages/Trips'
 import { ExpenseForm } from './pages/ExpenseForm'
 import { SettleForm } from './pages/SettleForm'
 import { Settings } from './pages/Settings'
@@ -39,7 +38,8 @@ export default function App() {
     <SessionProvider me={me}>
       <div className="app">
         <Page route={route} onSignInAgain={() => setSigningInAgain(true)} />
-        <BottomNav route={route} />
+        {/* The expense form is a full-screen task with its own action bar. */}
+        {route.page !== 'expense' && <BottomNav route={route} />}
       </div>
     </SessionProvider>
   )
@@ -49,8 +49,6 @@ function Page({ route, onSignInAgain }: { route: Route; onSignInAgain: () => voi
   switch (route.page) {
     case 'home':
       return <Home />
-    case 'trips':
-      return <Trips />
     case 'trip':
       return <TripPage key={route.id} id={route.id} />
     case 'expense':

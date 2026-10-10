@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { CalendarDays, Check } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Luggage, Wallet } from 'lucide-react'
 import { db, getMeta } from '../lib/db'
 import { CURRENCIES, decimals, formatAud, formatMoney, HOME, minorToInput, parseToMinor, symbol, toAudMinor } from '../lib/money'
 import { computeShares } from '../lib/splits'
@@ -63,15 +63,12 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const [category, setCategory] = useState('food')
   /** Once the category is chosen by hand (or by picking a suggestion), stop guessing it. */
   const [categoryTouched, setCategoryTouched] = useState(false)
-  /** Date and trip are usually right, so they sit behind a one-line summary. */
-  const [showDetails, setShowDetails] = useState(false)
   const [date, setDate] = useState(todayLocal())
   const [paidBy, setPaidBy] = useState(me)
   /** Each member's percentage of the bill, as typed. A missing entry means 50. */
   const [pct, setPct] = useState<Record<string, string>>({})
   /** False until the percentages are edited, so an older exact-amounts split survives an unrelated edit. */
   const [pctTouched, setPctTouched] = useState(false)
-  const [splitOpen, setSplitOpen] = useState(false)
   /** Confirmation shown after "Save & new". */
   const [flash, setFlash] = useState('')
   const amountRef = useRef<HTMLInputElement>(null)
@@ -173,7 +170,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
         <Header title="Add expense" left={<BackButton />} />
         <main>
           <Empty>
-            Create a trip first. <a href="#/trips">Go to Trips</a>
+            Create a trip first. <a href="#/">Go to Trips</a>
           </Empty>
         </main>
       </>
@@ -246,10 +243,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
 
   const save = async (another = false) => {
     setError('')
-    if (!tripId) {
-      setShowDetails(true)
-      return setError('Choose a trip')
-    }
+    if (!tripId) return setError('Choose a trip')
     if (!amountMinor) return setError('Enter an amount')
     if (!rateOk) return setError('Enter an exchange rate (you appear to be offline)')
     if (!split.ok) return setError(split.error)
@@ -282,7 +276,6 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setCategoryTouched(false)
     setPct({})
     setPctTouched(false)
-    setSplitOpen(false)
     setSaving(false)
     window.scrollTo(0, 0)
     amountRef.current?.focus()
@@ -296,190 +289,256 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
 
   const owedByOther = split.ok ? (payerIsMe ? split.shares[other] : split.shares[me]) : 0
   const splitInvalid = !!amountMinor && !split.ok
-  const showSplitOptions = splitOpen || splitInvalid
-
-  const pctLabel = (m: string) => `${Number(pct[m] ?? '50') || 0}%`
+  const myPct = Math.min(100, Math.max(0, Number(pct[me] ?? '50') || 0))
+  const presets = [
+    { label: 'Even', mine: 50 },
+    { label: 'All yours', mine: 100 },
+    { label: `All ${otherName}'s`, mine: 0 },
+  ]
 
   return (
     <>
-      <Header title={existing ? 'Edit expense' : 'Add expense'} left={<BackButton />} right={<span />} />
-      <main className="form">
+      <Header title={existing ? 'Edit expense' : 'New expense'} left={<BackButton />} right={<span />} />
+      <main className="expense">
         {flash && (
           <div className="flash" role="status">
             <Check size={16} aria-hidden /> {flash}
           </div>
         )}
-        <div className="amount-row">
-          <select
-            aria-label="Currency"
-            value={currency}
-            onChange={(e) => {
-              setCurrency(e.target.value)
-              setRate((r) => ({ ...r, manual: false }))
-            }}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.code}
-              </option>
-            ))}
-          </select>
-          <input
-            ref={amountRef}
-            className="amount"
-            inputMode={decimals(currency) ? 'decimal' : 'numeric'}
-            placeholder={decimals(currency) ? '0.00' : '0'}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            autoFocus={!existing}
-            aria-label="Amount"
-          />
-        </div>
 
-        {currency !== HOME && (
-          <div className="rate-box">
-            {editingRate ? (
-              <div className="rate-edit">
-                <span>{inverse ? `A$1 = ${symbol(currency)}` : `${symbol(currency).trim()}1 = A$`}</span>
-                <input inputMode="decimal" value={rateInput} onChange={(e) => setRateInput(e.target.value)} autoFocus />
-                <button className="btn small primary" onClick={applyRateInput}>
-                  Set
-                </button>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <strong>{amountMinor ? `≈ ${formatAud(audMinor)}` : 'AUD'}</strong>
-                  <span className="muted">
-                    {' '}
-                    · {rate.loading ? 'Fetching rate…' : rateText}
-                    {rate.manual ? ' (your rate)' : rate.rateDate && rate.rateDate !== date && rateOk ? ` (rate from ${rate.rateDate})` : ''}
-                  </span>
-                </div>
-                {rate.pending && (
-                  <div className="warn-text">Offline: using the last known rate. It'll update automatically once you're online.</div>
-                )}
-                <button
-                  className="link"
-                  onClick={() => {
-                    setRateInput(rateOk ? (inverse ? (1 / rate.rate).toFixed(2) : rate.rate.toFixed(4)) : '')
-                    setEditingRate(true)
-                  }}
-                >
-                  Edit rate
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        <label className="field">
-          <span>Description</span>
-          <input value={description} onChange={(e) => changeDescription(e.target.value)} placeholder="e.g. Ramen at Ichiran" />
-        </label>
-
-        {suggestions.length > 0 && (
-          <div className="chips scroll suggestions" aria-label="Past expenses">
-            {suggestions.map((e) => (
-              <button key={e.id} className="chip" onClick={() => applySuggestion(e)}>
-                <CategoryIcon id={e.category} size={16} /> {e.description}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="chips wrap">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              className={`chip ${category === c.id ? 'on' : ''}`}
-              onClick={() => {
-                setCategory(c.id)
-                setCategoryTouched(true)
+        <section className="amount-hero">
+          <label className="pill-select">
+            <span aria-hidden>{CURRENCIES.find((c) => c.code === currency)?.flag}</span>
+            {currency}
+            <ChevronDown size={14} strokeWidth={2} aria-hidden />
+            <select
+              aria-label="Currency"
+              value={currency}
+              onChange={(e) => {
+                setCurrency(e.target.value)
+                setRate((r) => ({ ...r, manual: false }))
               }}
             >
-              <CategoryIcon id={c.id} size={16} /> {c.label}
-            </button>
-          ))}
-        </div>
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {c.code} – {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {!showDetails ? (
-          <button className="meta-line" onClick={() => setShowDetails(true)}>
-            <CalendarDays size={16} strokeWidth={1.75} aria-hidden />
-            <span>
-              {dayLabel(date)} · {tripName}
+          <label className="amount-line">
+            <span className="amount-symbol">{symbol(currency).trim()}</span>
+            <input
+              ref={amountRef}
+              className="amount"
+              // Sized to its contents so the symbol sits right beside the digits.
+              style={{ width: `${Math.max(1, amount.length) + 0.25}ch` }}
+              inputMode={decimals(currency) ? 'decimal' : 'numeric'}
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              autoFocus={!existing}
+              aria-label="Amount"
+            />
+          </label>
+
+          {currency !== HOME && (
+            <div className="rate-line">
+              {editingRate ? (
+                <div className="rate-edit">
+                  <span>{inverse ? `A$1 = ${symbol(currency)}` : `${symbol(currency).trim()}1 = A$`}</span>
+                  <input inputMode="decimal" value={rateInput} onChange={(e) => setRateInput(e.target.value)} autoFocus />
+                  <button className="btn small primary" onClick={applyRateInput}>
+                    Set
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span>
+                    {amountMinor ? <strong>≈ {formatAud(audMinor)} · </strong> : null}
+                    {rate.loading ? 'Fetching rate…' : rateText}
+                    {rate.loading ? '' : rate.manual ? ' (your rate)' : rate.rateDate && rate.rateDate !== date && rateOk ? ` (rate from ${rate.rateDate})` : ''}
+                  </span>
+                  <button
+                    className="link"
+                    onClick={() => {
+                      setRateInput(rateOk ? (inverse ? (1 / rate.rate).toFixed(2) : rate.rate.toFixed(4)) : '')
+                      setEditingRate(true)
+                    }}
+                  >
+                    Edit rate
+                  </button>
+                </>
+              )}
+              {rate.pending && !editingRate && (
+                <div className="warn-text">Offline: using the last known rate. It'll update automatically once you're online.</div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="card group">
+          <label className="group-row">
+            <span className="tile" data-cat={category}>
+              <CategoryIcon id={category} />
             </span>
-            <span className="link">Change</span>
-          </button>
-        ) : (
-          <div className="grid-2">
-            <label className="field">
-              <span>Date</span>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="field">
-              <span>Trip</span>
-              <select value={tripId} onChange={(e) => setTripId(e.target.value)}>
-                {existing && !trips?.some((t) => t.id === existing.trip_id) && <option value={existing.trip_id}>(archived trip)</option>}
-                {trips?.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
+            <input
+              className="bare"
+              value={description}
+              onChange={(e) => changeDescription(e.target.value)}
+              placeholder="What was it for?"
+              aria-label="Description"
+            />
+          </label>
 
-        <div className="field">
-          <span>Paid by</span>
-          <div className="segmented">
-            <button className={payerIsMe ? 'on' : ''} onClick={() => setPaidBy(me)}>
-              You
-            </button>
-            <button className={!payerIsMe ? 'on' : ''} onClick={() => setPaidBy(other)}>
-              {otherName}
-            </button>
-          </div>
-        </div>
-
-        <div className={`split-box ${!amountMinor ? 'empty' : splitInvalid ? 'invalid' : ''}`}>
-          <button className="split-head" onClick={() => setSplitOpen(!showSplitOptions)} aria-expanded={showSplitOptions}>
-            <span className="split-text">
-              <span className="split-mode">
-                You {pctLabel(me)} · {otherName} {pctLabel(other)}
-              </span>
-              <span className="split-result">
-                {!amountMinor
-                  ? 'Enter an amount to see who owes what'
-                  : !split.ok
-                    ? split.error
-                    : owedByOther === 0
-                      ? 'Nobody owes anything for this one'
-                      : payerIsMe
-                        ? `${otherName} owes you ${formatAud(owedByOther)}`
-                        : `You owe ${otherName} ${formatAud(owedByOther)}`}
-                {amountMinor && currency !== HOME && split.ok ? <small> (of {formatMoney(amountMinor, currency)})</small> : null}
-              </span>
-            </span>
-            <span className="link">{showSplitOptions ? 'Done' : 'Edit'}</span>
-          </button>
-
-          {showSplitOptions && (
-            <div className="grid-2 split-inputs">
-              {[me, other].map((m) => (
-                <label className="field" key={m}>
-                  <span>{m === me ? 'Your' : `${otherName}'s`} %</span>
-                  <input inputMode="decimal" value={pct[m] ?? '50'} onChange={(e) => setPctFor(m, e.target.value)} />
-                </label>
+          {suggestions.length > 0 && (
+            <div className="suggestions" aria-label="Past expenses">
+              {suggestions.map((e) => (
+                <button key={e.id} className="chip" onClick={() => applySuggestion(e)}>
+                  <CategoryIcon id={e.category} size={16} /> {e.description}
+                </button>
               ))}
             </div>
           )}
-        </div>
 
+          <div className="cat-strip" role="radiogroup" aria-label="Category">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                role="radio"
+                aria-checked={category === c.id}
+                className={`cat ${category === c.id ? 'on' : ''}`}
+                onClick={() => {
+                  setCategory(c.id)
+                  setCategoryTouched(true)
+                }}
+              >
+                <span className="tile" data-cat={c.id}>
+                  <CategoryIcon id={c.id} />
+                </span>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="card group">
+          <div className="group-row picker">
+            <span className="tile">
+              <CalendarDays size={18} strokeWidth={1.75} aria-hidden />
+            </span>
+            <span className="group-label">Date</span>
+            <span className="group-value">
+              {dayLabel(date)} <ChevronDown size={16} strokeWidth={1.75} aria-hidden />
+            </span>
+            <input
+              className="overlay"
+              type="date"
+              aria-label="Date"
+              value={date}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+              onClick={(e) => {
+                // Desktop browsers only open the calendar from its own icon unless asked.
+                try {
+                  e.currentTarget.showPicker()
+                } catch {
+                  // Not supported: the native control still works.
+                }
+              }}
+            />
+          </div>
+          <div className="group-row picker">
+            <span className="tile">
+              <Luggage size={18} strokeWidth={1.75} aria-hidden />
+            </span>
+            <span className="group-label">Trip</span>
+            <span className="group-value">
+              {tripName} <ChevronDown size={16} strokeWidth={1.75} aria-hidden />
+            </span>
+            <select className="overlay" aria-label="Trip" value={tripId} onChange={(e) => setTripId(e.target.value)}>
+              {existing && !trips?.some((t) => t.id === existing.trip_id) && <option value={existing.trip_id}>(archived trip)</option>}
+              {trips?.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="group-row">
+            <span className="tile">
+              <Wallet size={18} strokeWidth={1.75} aria-hidden />
+            </span>
+            <span className="group-label">Paid by</span>
+            <div className="segmented compact">
+              <button className={payerIsMe ? 'on' : ''} onClick={() => setPaidBy(me)}>
+                You
+              </button>
+              <button className={!payerIsMe ? 'on' : ''} onClick={() => setPaidBy(other)}>
+                {otherName}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className={`card split-card ${!amountMinor ? 'is-empty' : splitInvalid ? 'is-invalid' : ''}`}>
+          <div className="split-sides">
+            {[me, other].map((m) => (
+              <div className="split-side" key={m}>
+                <span className="split-name">{m === me ? 'You' : otherName}</span>
+                <label className="split-pct">
+                  <input
+                    inputMode="decimal"
+                    value={pct[m] ?? '50'}
+                    style={{ width: `${Math.max(1, (pct[m] ?? '50').length)}ch` }}
+                    onChange={(e) => setPctFor(m, e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    aria-label={m === me ? 'Your percentage' : `${otherName}'s percentage`}
+                  />
+                  %
+                </label>
+                <span className="split-share">{amountMinor && split.ok ? formatAud(split.shares[m]) : ' '}</span>
+              </div>
+            ))}
+          </div>
+
+          <input
+            className="split-slider"
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={myPct}
+            onChange={(e) => setPctFor(me, e.target.value)}
+            style={{ '--p': `${myPct}%` } as CSSProperties}
+            aria-label="Your share of the bill"
+          />
+
+          <div className="split-presets">
+            {presets.map((p) => (
+              <button key={p.label} className={`chip ${myPct === p.mine ? 'on' : ''}`} onClick={() => setPctFor(me, String(p.mine))}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="split-result" role="status">
+            {!amountMinor
+              ? 'Enter an amount to see who owes what'
+              : !split.ok
+                ? split.error
+                : owedByOther === 0
+                  ? 'Nobody owes anything for this one'
+                  : payerIsMe
+                    ? `${otherName} owes you ${formatAud(owedByOther)}`
+                    : `You owe ${otherName} ${formatAud(owedByOther)}`}
+          </div>
+        </section>
+      </main>
+
+      <div className="action-bar">
         {error && <div className="error">{error}</div>}
-
-        <div className="btn-row sticky">
+        <div className="btn-row">
           {existing ? (
             <button className="btn danger ghost" onClick={remove}>
               Delete
@@ -493,7 +552,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
             {existing ? 'Save changes' : 'Add expense'}
           </button>
         </div>
-      </main>
+      </div>
     </>
   )
 }
