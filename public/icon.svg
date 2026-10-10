@@ -1,22 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- A gold coin on a soft sky. It sits inside the central 80%, so it survives a round or squircle mask. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.6" y2="1">
-      <stop offset="0" stop-color="#3d6e64"/>
-      <stop offset="1" stop-color="#22433d"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#d6ecf6"/>
+      <stop offset="1" stop-color="#a4cee4"/>
     </linearGradient>
-    <radialGradient id="glow" cx="1" cy="0" r="0.8">
-      <stop offset="0" stop-color="#f0be8c" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#f0be8c" stop-opacity="0"/>
+    <radialGradient id="sun" cx="0.95" cy="0.02" r="0.75">
+      <stop offset="0" stop-color="#fff3cd" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#fff3cd" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <rect width="512" height="512" fill="url(#glow)"/>
-  <g fill="none" stroke="#f8f2e8" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M256 132v252"/>
-    <path d="M156 178h200"/>
-    <path d="M204 384h104"/>
-    <path d="M156 178l-50 104h100z"/>
-    <path d="M356 178l-50 104h100z"/>
-  </g>
-  <circle cx="256" cy="132" r="18" fill="#f8f2e8"/>
+
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <rect width="512" height="512" fill="url(#sun)"/>
+
+  <circle cx="256" cy="256" r="190" fill="#f8cd62" stroke="#7a4a33" stroke-width="13"/>
+  <circle cx="256" cy="256" r="150" fill="#fbdf94" stroke="#e0a93c" stroke-width="9"/>
+  <!-- A little shine -->
+  <path d="M150 190 A124 124 0 0 1 214 140" fill="none" stroke="#fffdf9" stroke-width="13" stroke-linecap="round" opacity="0.85"/>
+
+  <path
+    transform="translate(256 258) scale(3)"
+    d="M-13 12 C-13 22 13 22 13 9 C13 -4 -13 4 -13 -9 C-13 -21 13 -21 13 -12 M0 -30 V30"
+    fill="none" stroke="#7a4a33" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
