@@ -144,7 +144,7 @@ main { padding: 0 18px 16px; animation: rise 0.4s var(--ease) both; }
 
 /* Balance card: a calm postcard */
 .balance-card {
-  position: relative; overflow: hidden;
+  position: relative; overflow: hidden; overflow: clip;
   margin: 8px 0 8px; padding: 22px 22px 20px; border-radius: 28px;
   color: var(--hero-text);
   background:
@@ -529,3 +529,31 @@ input.bare:focus { box-shadow: none; }
 .quick-amounts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .outcome { border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
 .footnote { margin: 0; font-size: 13.5px; text-align: center; }
+
+/* Trip switcher in the top bar */
+.title-select {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  max-width: 100%; padding: 4px 8px 4px 12px; border-radius: 999px; cursor: pointer; transition: background 0.15s;
+}
+.title-select > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.title-select > svg { flex: none; color: var(--muted); }
+.title-select:active, .title-select:focus-within { background: var(--surface-2); }
+
+/* Undo bar */
+.undo-bar {
+  position: fixed; z-index: 20; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 92px);
+  display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 6px 6px 6px 18px;
+  border-radius: 999px; background: var(--text); color: var(--bg);
+  font-size: 14.5px; font-weight: 500; white-space: nowrap; box-shadow: var(--shadow-lift);
+  animation: undo-in 0.3s var(--ease) both;
+}
+.undo-bar > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.undo-bar button {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+  border: 0; border-radius: 999px; background: color-mix(in srgb, var(--bg) 16%, transparent);
+  color: inherit; font-weight: 600; cursor: pointer;
+}
+@keyframes undo-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+}

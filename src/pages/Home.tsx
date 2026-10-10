@@ -88,7 +88,7 @@ export function Home() {
           <BalanceCard
             net={net}
             label="Overall balance"
-            onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements))}
+            onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements), 'Marked as settled')}
           />
         )}
 

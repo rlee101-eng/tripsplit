@@ -2,6 +2,7 @@ import { useLayoutEffect, useState } from 'react'
 import { LOCAL_MODE } from './lib/supabase'
 import { SessionProvider, useBootstrap, useMe } from './lib/session'
 import { useRoute, type Route } from './lib/router'
+import { UndoBar } from './components/UndoBar'
 import { Home } from './pages/Home'
 import { TripPage } from './pages/TripPage'
 import { ExpenseForm } from './pages/ExpenseForm'
@@ -37,6 +38,7 @@ export default function App() {
     <SessionProvider me={me}>
       <div className="app">
         <Page route={route} onSignInAgain={() => setSigningInAgain(true)} />
+        <UndoBar />
       </div>
     </SessionProvider>
   )

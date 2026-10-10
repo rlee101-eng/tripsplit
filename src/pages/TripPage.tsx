@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
 import { db } from '../lib/db'
 import { netBalance, spendingByMember } from '../lib/balances'
 import { formatAud } from '../lib/money'
@@ -17,6 +17,7 @@ import { TripEditor } from '../components/TripEditor'
 export function TripPage({ id }: { id: string }) {
   const { me, partner, name } = useSession()
   const trip = useLiveQuery(() => db.trips.get(id), [id])
+  const allTrips = useLiveQuery(() => db.trips.filter((t) => !t.deleted_at).toArray(), [])
   const expenses = useLiveQuery(() => db.expenses.where('trip_id').equals(id).toArray(), [id])
   const settlements = useLiveQuery(() => db.settlements.where('trip_id').equals(id).toArray(), [id])
   const [filter, setFilter] = useState<string | null>(null)
@@ -25,6 +26,10 @@ export function TripPage({ id }: { id: string }) {
   if (!trip || !expenses || !settlements) return <Header title="Trip" left={<BackButton href="#/" />} />
 
   const live = expenses.filter((e) => !e.deleted_at)
+  // Other trips for the switcher in the title: current ones first, newest first.
+  const others = (allTrips ?? [])
+    .filter((t) => t.id !== id)
+    .sort((a, b) => Number(a.archived) - Number(b.archived) || b.created_at.localeCompare(a.created_at))
   const net = netBalance(me, expenses, settlements)
   const total = live.reduce((a, e) => a + e.amount_aud_minor, 0)
   const shares = spendingByMember(live)
@@ -40,7 +45,29 @@ export function TripPage({ id }: { id: string }) {
 
   return (
     <>
-      <Header title={trip.name} left={<BackButton href="#/" />} />
+      <Header
+        left={<BackButton href="#/" />}
+        title={
+          others.length === 0 ? (
+            trip.name
+          ) : (
+            <label className="title-select">
+              <span>{trip.name}</span>
+              <ChevronDown size={16} strokeWidth={2} aria-hidden />
+              {/* Replace, so Back still leads home however many trips you hop between. */}
+              <select className="overlay" aria-label="Switch trip" value={id} onChange={(e) => location.replace(`#/trip/${e.target.value}`)}>
+                <option value={id}>{trip.name}</option>
+                {others.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.archived ? ' (archived)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )
+        }
+      />
       <main>
         {partner && (
           <BalanceCard
@@ -49,7 +76,7 @@ export function TripPage({ id }: { id: string }) {
             partialHref={`#/settle?trip=${id}`}
             onSettle={async () => {
               const s = settlementFor(me, partner.user_id, id, net)
-              if (s) await saveSettlement(s)
+              if (s) await saveSettlement(s, 'Marked as settled')
             }}
           />
         )}

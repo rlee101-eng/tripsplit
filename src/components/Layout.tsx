@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import { syncStore, syncNow } from '../lib/sync'
 import { LOCAL_MODE } from '../lib/supabase'
 
-export function Header({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
+export function Header({ title, left, right }: { title: ReactNode; left?: ReactNode; right?: ReactNode }) {
   return (
     <header className="topbar">
       <div className="topbar-side">{left}</div>
