@@ -110,5 +110,7 @@ export async function completeSignIn(userId: string, displayName: string): Promi
 export async function signOut() {
   await supabase?.auth.signOut()
   await db.delete()
+  // Start over on the home page, not on Settings where the sign-out button is.
+  location.hash = '#/'
   location.reload()
 }

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from 'react'
 import { LOCAL_MODE } from './lib/supabase'
 import { SessionProvider, useBootstrap, useMe } from './lib/session'
-import { useRoute, type Route } from './lib/router'
+import { go, useRoute, type Route } from './lib/router'
 import { UndoBar } from './components/UndoBar'
 import { Home } from './pages/Home'
 import { TripPage } from './pages/TripPage'
@@ -28,7 +28,11 @@ export default function App() {
     return (
       <Login
         onCancel={signingInAgain ? () => setSigningInAgain(false) : undefined}
-        onDone={() => setSigningInAgain(false)}
+        onDone={() => {
+          // A fresh sign-in opens on the balances page; signing in again stays where you were.
+          if (!signingInAgain) go('#/')
+          setSigningInAgain(false)
+        }}
       />
     )
   }

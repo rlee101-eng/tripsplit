@@ -25,6 +25,10 @@ export function parseHash(hash: string): Route {
   }
 }
 
+// Settings is never where the app opens: starting there (after signing out, or because
+// that's where it was last closed) lands on the balances page instead.
+if (parseHash(location.hash).page === 'settings') history.replaceState(null, '', '#/')
+
 function subscribe(cb: () => void) {
   window.addEventListener('hashchange', cb)
   return () => window.removeEventListener('hashchange', cb)
