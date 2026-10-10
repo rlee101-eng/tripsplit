@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { CalendarDays, Check, ChevronDown, Luggage, Wallet } from 'lucide-react'
+import { CalendarDays, ChevronDown, Luggage, PawPrint, Wallet } from 'lucide-react'
 import { db, getMeta } from '../lib/db'
 import { CURRENCIES, decimals, formatAud, formatMoney, HOME, minorToInput, parseToMinor, symbol, toAudMinor } from '../lib/money'
 import { computeShares } from '../lib/splits'
@@ -302,7 +302,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       <main className="expense">
         {flash && (
           <div className="flash" role="status">
-            <Check size={16} aria-hidden /> {flash}
+            <PawPrint size={16} aria-hidden /> {flash}
           </div>
         )}
 

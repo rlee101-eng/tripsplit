@@ -557,3 +557,32 @@ input.bare:focus { box-shadow: none; }
 @keyframes undo-in {
   from { opacity: 0; transform: translate(-50%, 12px); }
 }
+
+/* The cats */
+.perch { position: relative; padding-top: 30px; }
+.cats { position: absolute; z-index: 2; top: -15px; right: 22px; display: flex; align-items: flex-end; gap: 2px; }
+.kitty {
+  position: relative; display: block; padding: 0; border: 0; background: none; cursor: pointer;
+  transition: transform 0.3s var(--ease); -webkit-tap-highlight-color: transparent;
+}
+.kitty svg { display: block; width: 100%; overflow: visible; }
+.kitty:active { transform: translateY(2px) scale(0.97); }
+.kitty.patted { animation: cat-bounce 0.5s var(--ease); }
+.cat-eyes { transform-box: fill-box; transform-origin: center; animation: cat-blink 5.5s infinite; }
+.kitty.calico .cat-eyes { animation-delay: 1.7s; }
+.cat-hearts { position: absolute; left: 50%; top: 0; width: 0; height: 0; pointer-events: none; }
+.cat-hearts svg {
+  position: absolute; left: -7px; top: -6px; width: 14px; fill: #e8837f; opacity: 0;
+  animation: heart-rise 1.3s ease-out forwards;
+}
+.cat-hearts svg:nth-child(2) { --drift: -16px; width: 11px; animation-delay: 0.12s; }
+.cat-hearts svg:nth-child(3) { --drift: 15px; width: 12px; animation-delay: 0.24s; }
+@keyframes cat-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes cat-bounce { 30% { transform: translateY(-6px) rotate(-3deg); } 60% { transform: translateY(0) rotate(2deg); } }
+@keyframes heart-rise {
+  0% { opacity: 0; transform: translate(0, 4px) scale(0.5); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift, 0px), -38px) scale(1.15); }
+}
+.empty .kitty { margin: 0 auto 8px; }
+.greeting h2 .amp { display: inline-block; margin: 0 2px; vertical-align: -1px; color: #e8837f; fill: #e8837f; }

@@ -116,7 +116,7 @@ export function TripPage({ id }: { id: string }) {
         )}
 
         {items.length === 0 ? (
-          <Empty>No expenses yet. Add the first one below.</Empty>
+          <Empty cat="calico">No expenses yet. Add the first one below.</Empty>
         ) : (
           <ActivityList items={items} onSettlementTap={onSettlementTap} />
         )}

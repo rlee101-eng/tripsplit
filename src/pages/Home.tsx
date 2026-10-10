@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronRight, Plus, Settings } from 'lucide-react'
+import { ChevronRight, Heart, Plus, Settings } from 'lucide-react'
 import { db } from '../lib/db'
 import { balancesByTrip, netBalance } from '../lib/balances'
 import { CURRENCIES, formatAud } from '../lib/money'
@@ -10,6 +10,7 @@ import { createTrip, saveSettlements } from '../lib/mutations'
 import { go } from '../lib/router'
 import type { Trip } from '../lib/types'
 import { BalanceCard } from '../components/BalanceCard'
+import { Cats } from '../components/Cats'
 import { Header, SyncBadge } from '../components/Layout'
 import { WaitingForPartner } from '../components/WaitingForPartner'
 import { TripStamp } from '../components/Icons'
@@ -80,17 +81,29 @@ export function Home() {
       <main>
         <div className="greeting">
           <span>{greeting()}</span>
-          <h2>{meMember?.display_name && partner ? `${meMember.display_name} & ${partner.display_name}` : 'Welcome'}</h2>
+          <h2>
+            {meMember?.display_name && partner ? (
+              <>
+                {meMember.display_name} <Heart className="amp" size={18} aria-label="and" /> {partner.display_name}
+              </>
+            ) : (
+              'Welcome'
+            )}
+          </h2>
         </div>
-        {!partner ? (
-          <WaitingForPartner />
-        ) : (
-          <BalanceCard
-            net={net}
-            label="Overall balance"
-            onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements), 'Marked as settled')}
-          />
-        )}
+        {/* The cats peek over the card; they're extra happy when nothing is owed. */}
+        <div className="perch">
+          <Cats happy={!!partner && net === 0} />
+          {!partner ? (
+            <WaitingForPartner />
+          ) : (
+            <BalanceCard
+              net={net}
+              label="Between you two"
+              onSettle={() => saveSettlements(settleEverything(me, partner.user_id, expenses, settlements), 'Marked as settled')}
+            />
+          )}
+        </div>
 
         <h2 className="section-title">
           Trips

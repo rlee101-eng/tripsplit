@@ -2,6 +2,7 @@ import { useSyncExternalStore, type ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { syncStore, syncNow } from '../lib/sync'
 import { LOCAL_MODE } from '../lib/supabase'
+import { Cat, type CatKind } from './Cats'
 
 export function Header({ title, left, right }: { title: ReactNode; left?: ReactNode; right?: ReactNode }) {
   return (
@@ -38,6 +39,11 @@ export function SyncBadge() {
   )
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <div className="empty">{children}</div>
+export function Empty({ children, cat }: { children: ReactNode; cat?: CatKind }) {
+  return (
+    <div className="empty">
+      {cat && <Cat kind={cat} />}
+      {children}
+    </div>
+  )
 }
