@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { formatAud } from '../lib/money'
 import { useSession } from '../lib/session'
 
@@ -8,12 +8,15 @@ export function BalanceCard({
   label,
   onSettle,
   partialHref,
+  decoration,
 }: {
   net: number
   label?: string
   onSettle: () => Promise<void>
   /** Where to record a part payment. Omit where there's no single trip to record it against. */
   partialHref?: string
+  /** Something to float in the card's top corner. */
+  decoration?: ReactNode
 }) {
   const { partner } = useSession()
   const [confirming, setConfirming] = useState(false)
@@ -32,6 +35,7 @@ export function BalanceCard({
 
   return (
     <div className={`balance-card ${net > 0 ? 'pos' : net < 0 ? 'neg' : 'zero'}`}>
+      {decoration}
       {label && <div className="balance-label">{label}</div>}
       {net === 0 ? (
         <>

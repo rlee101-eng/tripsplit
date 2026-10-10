@@ -587,3 +587,19 @@ input.bare:focus { box-shadow: none; }
 }
 .empty .kitty { margin: 0 auto 8px; }
 .greeting h2 .amp { display: inline-block; margin: 0 2px; vertical-align: -1px; color: #e8837f; fill: #e8837f; }
+
+/* The cats' plane, in the corner of a trip's balance card */
+.balance-card > .plane {
+  position: absolute; z-index: 2; top: 8px; right: 10px; width: 116px; padding: 0; border: 0; background: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  animation: plane-in 1.1s var(--ease) both;
+}
+.plane svg { display: block; width: 100%; overflow: visible; animation: plane-bob 3.2s ease-in-out 1.1s infinite; }
+.plane.patted svg { animation: plane-roll 1s var(--ease); }
+.plane .cat-hearts { top: 40%; }
+.plane .cat-eyes { transform-box: fill-box; transform-origin: center; }
+.propeller { transform-box: fill-box; transform-origin: center; animation: prop-spin 0.18s linear infinite; }
+@keyframes plane-in { from { opacity: 0; transform: translate(-190px, 26px) rotate(-10deg); } }
+@keyframes plane-bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(1.5deg); } }
+@keyframes plane-roll { 40% { transform: translateY(-8px) rotate(-180deg) scale(1.05); } 100% { transform: rotate(-360deg); } }
+@keyframes prop-spin { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.15); } }

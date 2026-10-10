@@ -9,6 +9,7 @@ import { settlementFor } from '../lib/settle'
 import { deleteSettlement, saveSettlement } from '../lib/mutations'
 import { CATEGORIES } from '../lib/types'
 import { BalanceCard } from '../components/BalanceCard'
+import { CatPlane } from '../components/Cats'
 import { ActivityList, mergeActivity } from '../components/Activity'
 import { BackButton, Empty, Header } from '../components/Layout'
 import { CategoryIcon } from '../components/Icons'
@@ -73,6 +74,7 @@ export function TripPage({ id }: { id: string }) {
           <BalanceCard
             net={net}
             label="This trip"
+            decoration={<CatPlane happy={net === 0} />}
             partialHref={`#/settle?trip=${id}`}
             onSettle={async () => {
               const s = settlementFor(me, partner.user_id, id, net)
