@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f0e8" />
+    <meta name="theme-color" content="#fdf6ee" />
     <script>
       // Apply the saved theme before first paint. Kept in sync with src/lib/theme.ts.
       ;(function () {
@@ -11,7 +11,7 @@
         try { pref = localStorage.getItem('theme') || 'system' } catch (e) {}
         var dark = pref === 'dark' || (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        document.querySelector('meta[name=theme-color]').content = dark ? '#111615' : '#f5f0e8'
+        document.querySelector('meta[name=theme-color]').content = dark ? '#1f1814' : '#fdf6ee'
       })()
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />

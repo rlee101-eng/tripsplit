@@ -21,7 +21,7 @@ let pref = read()
 function apply() {
   const isDark = pref === 'dark' || (pref === 'system' && dark.matches)
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
-  document.querySelector<HTMLMetaElement>('meta[name=theme-color]')?.setAttribute('content', isDark ? '#111615' : '#f5f0e8')
+  document.querySelector<HTMLMetaElement>('meta[name=theme-color]')?.setAttribute('content', isDark ? '#1f1814' : '#fdf6ee')
 }
 
 // Follow the phone's setting live while on "System".
