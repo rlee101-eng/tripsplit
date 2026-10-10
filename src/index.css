@@ -58,15 +58,16 @@
   --danger: #f39483;
   --warn: #e6c170;
   --them: #8dbfd9;
-  --hero-from: #3f5f79;
-  --hero-to: #2b4259;
+  --hero-from: #2c3a66;
+  --hero-to: #161d3a;
   --hero-text: #fbf1e6;
   --hero-btn: #fbf1e6;
-  --hero-btn-text: #2b4259;
+  --hero-btn-text: #1d2648;
   --hero-line: rgb(255 255 255 / 0.28);
   --hero-tint: rgb(255 255 255 / 0.07);
-  --cloud: rgb(255 255 255 / 0.07);
-  --glow: rgb(255 214 160 / 0.22);
+  --cloud: rgb(255 255 255 / 0.06);
+  /* moonlight */
+  --glow: rgb(214 224 255 / 0.3);
   --shadow: none;
   --shadow-lift: 0 18px 40px rgb(0 0 0 / 0.45);
   --card-border: var(--border);
@@ -177,6 +178,25 @@ main { padding: 0 18px 16px; animation: rise 0.4s var(--ease) both; }
     radial-gradient(ellipse 54px 30px at 98% 100%, var(--cloud) 98%, transparent);
 }
 .balance-card > * { position: relative; z-index: 1; }
+/* After dark the sky fills with stars, two sizes twinkling out of step. */
+[data-theme='dark'] .balance-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(circle 1.6px at 7% 16%, #fff 99%, transparent),
+    radial-gradient(circle 1.2px at 19% 58%, #fff 99%, transparent),
+    radial-gradient(circle 1.8px at 31% 9%, #fff 99%, transparent),
+    radial-gradient(circle 1.1px at 44% 34%, #fff 99%, transparent),
+    radial-gradient(circle 1.5px at 56% 13%, #fff 99%, transparent),
+    radial-gradient(circle 1.2px at 63% 62%, #fff 99%, transparent),
+    radial-gradient(circle 1.9px at 72% 27%, #fff 99%, transparent),
+    radial-gradient(circle 1.1px at 81% 50%, #fff 99%, transparent),
+    radial-gradient(circle 1.5px at 90% 14%, #fff 99%, transparent),
+    radial-gradient(circle 1.3px at 95% 70%, #fff 99%, transparent),
+    radial-gradient(circle 1.1px at 38% 74%, #fff 99%, transparent),
+    radial-gradient(circle 1.4px at 4% 44%, #fff 99%, transparent);
+  opacity: 0.85; animation: twinkle 3.6s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { opacity: 0.4; } to { opacity: 0.95; } }
 .balance-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; opacity: 0.7; }
 .balance-who { font-size: 15px; margin-top: 10px; opacity: 0.88; }
 .balance-amount {
