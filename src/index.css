@@ -359,26 +359,13 @@ input.amount {
   display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px;
   border: 0; background: none; color: inherit; text-align: left; cursor: pointer;
 }
-.split-head > svg { flex: none; color: var(--muted); transition: transform 0.2s; }
-.split-head > svg.flip { transform: rotate(180deg); }
 .split-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .split-mode { font-size: 13px; font-weight: 500; color: var(--muted); }
 .split-result { font-family: var(--serif); font-size: 18px; font-weight: 500; color: var(--pos); }
 .split-result small { font-family: var(--sans); font-size: 13px; font-weight: 400; color: var(--muted); }
 .split-box.invalid .split-result { color: var(--neg); }
 .split-box.empty .split-result { font-family: var(--sans); font-size: 15px; font-weight: 400; color: var(--muted); }
-.split-options { display: flex; flex-direction: column; gap: 2px; padding: 0 6px 6px; }
-.split-option {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; padding: 10px 12px;
-  border: 0; border-radius: 12px; background: none; color: var(--text); font-size: 15px; text-align: left; cursor: pointer;
-}
-.split-option > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.split-option small { font-size: 12.5px; font-weight: 400; color: var(--muted); }
-.split-option.on { background: var(--surface); font-weight: 600; }
-.split-option > svg { flex: none; color: var(--accent); }
-.split-inputs { display: flex; flex-direction: column; gap: 8px; padding: 8px 6px 10px; }
-.grid-2.split-inputs { display: grid; }
-.split-inputs .grid-2, .grid-2.split-inputs { align-items: end; }
+.split-inputs { padding: 0 16px 16px; }
 
 .flash {
   display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px;

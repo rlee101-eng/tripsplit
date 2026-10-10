@@ -57,6 +57,27 @@ export function Settings({ onSignInAgain }: { onSignInAgain: () => void }) {
                   </button>
                 ))}
               </div>
+              {/* Testing aid: only on the dev server, never in the deployed app. */}
+              {import.meta.env.DEV && (
+                <>
+                  <p className="muted">Sample data adds two trips with a mix of expenses, so there's something to test against.</p>
+                  <div className="btn-row">
+                    <button className="btn ghost" onClick={() => void import('../lib/sample').then((m) => m.loadSampleData())}>
+                      Load sample data
+                    </button>
+                    <button
+                      className="btn danger ghost"
+                      onClick={() => {
+                        if (confirm('Remove every trip, expense and payment from this device?')) {
+                          void import('../lib/sample').then((m) => m.clearLocalData())
+                        }
+                      }}
+                    >
+                      Clear all data
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}

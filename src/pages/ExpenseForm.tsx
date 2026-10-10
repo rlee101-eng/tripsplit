@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { CalendarDays, Check, ChevronDown } from 'lucide-react'
+import { CalendarDays, Check } from 'lucide-react'
 import { db, getMeta } from '../lib/db'
 import { CURRENCIES, decimals, formatAud, formatMoney, HOME, minorToInput, parseToMinor, symbol, toAudMinor } from '../lib/money'
-import { amountsWithExtras, computeShares } from '../lib/splits'
+import { computeShares } from '../lib/splits'
 import { getRate } from '../lib/fx'
 import { dayLabel, todayLocal, uuid } from '../lib/dates'
 import { descriptionSuggestions, guessCategory } from '../lib/suggest'
@@ -22,8 +22,31 @@ interface RateState {
   manual: boolean
 }
 
-/** How the split is entered. 'extras' (equal, except personal items) is saved as custom_amount. */
-type SplitMode = SplitType | 'extras'
+/**
+ * A stored split as percentage inputs, keyed by member. Empty means the default 50/50.
+ * Exact-amount splits are rounded to two decimal places, the last member taking the remainder.
+ */
+function percentInputs(e: Expense): Record<string, string> {
+  const ids = Object.keys(e.shares)
+  switch (e.split_type) {
+    case 'equal':
+      return {}
+    case 'full_other':
+      return Object.fromEntries(ids.map((m) => [m, m === e.paid_by ? '0' : '100']))
+    case 'custom_percent':
+      return Object.fromEntries(ids.map((m) => [m, String((e.split_input?.[m] ?? 0) / 100)]))
+    case 'custom_amount': {
+      let left = 10000
+      return Object.fromEntries(
+        ids.map((m, i) => {
+          const bp = i === ids.length - 1 ? left : Math.round(((e.split_input?.[m] ?? 0) / e.amount_minor) * 10000)
+          left -= bp
+          return [m, String(bp / 100)]
+        }),
+      )
+    }
+  }
+}
 
 export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?: string }) {
   const { me, partner, name } = useSession()
@@ -44,10 +67,10 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const [showDetails, setShowDetails] = useState(false)
   const [date, setDate] = useState(todayLocal())
   const [paidBy, setPaidBy] = useState(me)
-  const [mode, setMode] = useState<SplitMode>('equal')
-  const [custom, setCustom] = useState<Record<string, string>>({})
-  /** Each member's personal items, in the original currency, for the 'extras' mode. */
-  const [extras, setExtras] = useState<Record<string, string>>({})
+  /** Each member's percentage of the bill, as typed. A missing entry means 50. */
+  const [pct, setPct] = useState<Record<string, string>>({})
+  /** False until the percentages are edited, so an older exact-amounts split survives an unrelated edit. */
+  const [pctTouched, setPctTouched] = useState(false)
   const [splitOpen, setSplitOpen] = useState(false)
   /** Confirmation shown after "Save & new". */
   const [flash, setFlash] = useState('')
@@ -72,17 +95,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       setCategoryTouched(true)
       setDate(existing.date)
       setPaidBy(existing.paid_by)
-      setMode(existing.split_type)
-      if (existing.split_input) {
-        setCustom(
-          Object.fromEntries(
-            Object.entries(existing.split_input).map(([k, v]) => [
-              k,
-              existing.split_type === 'custom_percent' ? String(v / 100) : minorToInput(v, existing.currency),
-            ]),
-          ),
-        )
-      }
+      setPct(percentInputs(existing))
       setRate({ rate: existing.fx_rate_to_aud, pending: existing.rate_pending, loading: false, manual: false })
       storedRateKey.current = `${existing.date}:${existing.currency}`
     } else {
@@ -123,29 +136,26 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     return () => clearTimeout(t)
   }, [flash])
 
-  const splitType: SplitType = mode === 'extras' ? 'custom_amount' : mode
-  const extrasMinor = Object.fromEntries(members.map((m) => [m, parseToMinor(extras[m] ?? '', currency) ?? 0]))
-  const withExtras = mode === 'extras' && amountMinor ? amountsWithExtras(amountMinor, extrasMinor, paidBy, members) : null
+  const pctBp = Object.fromEntries(members.map((m) => [m, Math.round(Number(pct[m] ?? '50') * 100)]))
+  const even = members.every((m) => pctBp[m] * members.length === 10000)
+  const keepAmounts =
+    !!existing &&
+    !pctTouched &&
+    existing.split_type === 'custom_amount' &&
+    amountMinor === existing.amount_minor &&
+    currency === existing.currency
+  // An even split is stored as 'equal'; anything else as percentages.
+  const splitType: SplitType = keepAmounts ? 'custom_amount' : even ? 'equal' : 'custom_percent'
+  const splitInput: Record<string, number> | null = keepAmounts ? existing.split_input : even ? null : pctBp
 
-  const splitInput: Record<string, number> | null =
-    mode === 'extras'
-      ? withExtras?.ok
-        ? withExtras.amounts
-        : null
-      : splitType === 'custom_amount'
-      ? Object.fromEntries(members.map((m) => [m, parseToMinor(custom[m] ?? '', currency) ?? 0]))
-      : splitType === 'custom_percent'
-        ? Object.fromEntries(members.map((m) => [m, Math.round(Number(custom[m] || 0) * 100)]))
-        : null
-
-  const split = withExtras && !withExtras.ok ? withExtras : computeShares({
-      type: splitType,
-      totalMinor: amountMinor ?? 0,
-      totalAudMinor: audMinor,
-      payer: paidBy,
-      members,
-      input: splitInput,
-    })
+  const split = computeShares({
+    type: splitType,
+    totalMinor: amountMinor ?? 0,
+    totalAudMinor: audMinor,
+    payer: paidBy,
+    members,
+    input: splitInput,
+  })
 
   if (!partner) {
     return (
@@ -192,29 +202,13 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
       ? `A$1 = ${symbol(currency)}${(1 / rate.rate).toFixed(2)}`
       : `${symbol(currency).trim()}1 = A$${rate.rate.toFixed(4)}`
 
-  const setCustomFor = (m: string, v: string) => {
-    const otherId = m === me ? other : me
-    const next = { ...custom, [m]: v }
+  const setPctFor = (m: string, v: string) => {
+    const next = { ...pct, [m]: v }
     // Fill the other side with the remainder.
-    if (splitType === 'custom_amount' && amountMinor) {
-      const mine = parseToMinor(v, currency)
-      if (mine !== null && mine <= amountMinor) next[otherId] = minorToInput(amountMinor - mine, currency)
-    } else if (splitType === 'custom_percent') {
-      const pct = Number(v)
-      if (v !== '' && pct >= 0 && pct <= 100) next[otherId] = String(Math.round((100 - pct) * 100) / 100)
-    }
-    setCustom(next)
-  }
-
-  const chooseMode = (t: SplitMode) => {
-    setMode(t)
-    // These need no further input, so the choice is done.
-    if (t === 'equal' || t === 'full_other') setSplitOpen(false)
-    if (t === 'custom_percent') setCustom({ [me]: '50', [other]: '50' })
-    if (t === 'custom_amount' && amountMinor) {
-      const half = Math.floor(amountMinor / 2)
-      setCustom({ [me]: minorToInput(amountMinor - half, currency), [other]: minorToInput(half, currency) })
-    }
+    const n = Number(v)
+    if (v !== '' && n >= 0 && n <= 100) next[m === me ? other : me] = String(Math.round((100 - n) * 100) / 100)
+    setPct(next)
+    setPctTouched(true)
   }
 
   const applyRateInput = () => {
@@ -241,12 +235,10 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setCategory(e.category)
     setCategoryTouched(true)
     if (members.includes(e.paid_by)) setPaidBy(e.paid_by)
-    if (e.split_type === 'custom_percent' && e.split_input) {
-      setMode('custom_percent')
-      setCustom(Object.fromEntries(Object.entries(e.split_input).map(([k, v]) => [k, String(v / 100)])))
-    } else if (e.split_type !== 'custom_amount') {
-      // Custom amounts belonged to the old total, so they don't carry over.
-      setMode(e.split_type)
+    // Exact amounts belonged to the old total, so they don't carry over.
+    if (e.split_type !== 'custom_amount') {
+      setPct(percentInputs(e))
+      setPctTouched(true)
     }
   }
 
@@ -288,9 +280,8 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
     setDescription('')
     setCategory('food')
     setCategoryTouched(false)
-    setMode('equal')
-    setCustom({})
-    setExtras({})
+    setPct({})
+    setPctTouched(false)
     setSplitOpen(false)
     setSaving(false)
     window.scrollTo(0, 0)
@@ -307,14 +298,7 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
   const splitInvalid = !!amountMinor && !split.ok
   const showSplitOptions = splitOpen || splitInvalid
 
-  const modes: { id: SplitMode; label: string; hint?: string }[] = [
-    { id: 'equal', label: 'Split equally' },
-    { id: 'full_other', label: payerIsMe ? `${otherName} owes the full amount` : 'You owe the full amount' },
-    { id: 'extras', label: 'Equally, except some items', hint: 'Take out anything that was just for one person' },
-    { id: 'custom_amount', label: 'Exact amounts' },
-    { id: 'custom_percent', label: 'Percentages' },
-  ]
-  const sharedMinor = amountMinor ? amountMinor - members.reduce((sum, m) => sum + extrasMinor[m], 0) : 0
+  const pctLabel = (m: string) => `${Number(pct[m] ?? '50') || 0}%`
 
   return (
     <>
@@ -462,7 +446,9 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
         <div className={`split-box ${!amountMinor ? 'empty' : splitInvalid ? 'invalid' : ''}`}>
           <button className="split-head" onClick={() => setSplitOpen(!showSplitOptions)} aria-expanded={showSplitOptions}>
             <span className="split-text">
-              <span className="split-mode">{modes.find((m) => m.id === mode)?.label}</span>
+              <span className="split-mode">
+                You {pctLabel(me)} · {otherName} {pctLabel(other)}
+              </span>
               <span className="split-result">
                 {!amountMinor
                   ? 'Enter an amount to see who owes what'
@@ -476,57 +462,16 @@ export function ExpenseForm({ id, tripId: routeTripId }: { id?: string; tripId?:
                 {amountMinor && currency !== HOME && split.ok ? <small> (of {formatMoney(amountMinor, currency)})</small> : null}
               </span>
             </span>
-            <ChevronDown size={18} className={showSplitOptions ? 'flip' : ''} aria-hidden />
+            <span className="link">{showSplitOptions ? 'Done' : 'Edit'}</span>
           </button>
 
           {showSplitOptions && (
-            <div className="split-options">
-              {modes.map((m) => (
-                <div key={m.id}>
-                  <button className={`split-option ${mode === m.id ? 'on' : ''}`} onClick={() => chooseMode(m.id)}>
-                    <span>
-                      {m.label}
-                      {m.hint && <small>{m.hint}</small>}
-                    </span>
-                    {mode === m.id && <Check size={18} aria-hidden />}
-                  </button>
-
-                  {mode === m.id && (m.id === 'custom_amount' || m.id === 'custom_percent') && (
-                    <div className="grid-2 split-inputs">
-                      {[me, other].map((p) => (
-                        <label className="field" key={p}>
-                          <span>
-                            {p === me ? 'Your' : `${otherName}'s`} {m.id === 'custom_percent' ? '%' : `share (${currency})`}
-                          </span>
-                          <input inputMode="decimal" value={custom[p] ?? ''} onChange={(e) => setCustomFor(p, e.target.value)} />
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {mode === m.id && m.id === 'extras' && (
-                    <div className="split-inputs">
-                      <div className="grid-2">
-                        {[me, other].map((p) => (
-                          <label className="field" key={p}>
-                            <span>
-                              Just {p === me ? 'yours' : `${otherName}'s`} ({currency})
-                            </span>
-                            <input
-                              inputMode={decimals(currency) ? 'decimal' : 'numeric'}
-                              placeholder="0"
-                              value={extras[p] ?? ''}
-                              onChange={(e) => setExtras({ ...extras, [p]: e.target.value })}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                      {amountMinor && sharedMinor >= 0 ? (
-                        <small className="muted">The other {formatMoney(sharedMinor, currency)} is split equally.</small>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
+            <div className="grid-2 split-inputs">
+              {[me, other].map((m) => (
+                <label className="field" key={m}>
+                  <span>{m === me ? 'Your' : `${otherName}'s`} %</span>
+                  <input inputMode="decimal" value={pct[m] ?? '50'} onChange={(e) => setPctFor(m, e.target.value)} />
+                </label>
               ))}
             </div>
           )}
